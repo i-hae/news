@@ -1,1 +1,7882 @@
-# news
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스마트 카드뉴스 올인원 스튜디오 (멀티 슬라이드 에디터)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- JSZip CDN for batch multi-slide export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- Pretendard Font CDN -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Google Fonts: Noto Serif KR, Black Han Sans, Nanum Myeongjo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Myeongjo:wght@700;800&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+    @font-face {
+      font-family: 'GmarketSansBold';
+      src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+      font-weight: 700;
+      font-style: normal;
+    }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+    /* Custom scrollbar for modern sleek aesthetic */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+    .checkerboard-bg {
+      background-color: #0f172a;
+      background-image: 
+        linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+        linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+        linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+    /* 직접 수치 입력 인라인 컨트롤러 스타일 */
+    .num-input-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background-color: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(51, 65, 85, 0.85);
+      border-radius: 4px;
+      padding: 1px 4px;
+      transition: all 0.15s ease;
+    }
+    .num-input-wrap:focus-within {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 1px #6366f1;
+      background-color: rgba(15, 23, 42, 1);
+    }
+    .num-input-val {
+      width: 44px;
+      background: transparent;
+      text-align: right;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: #a5b4fc;
+      border: none;
+      outline: none;
+      padding: 0;
+    }
+    .num-input-val:focus {
+      outline: none;
+    }
+    .num-input-unit {
+      font-size: 10px;
+      color: #64748b;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      user-select: none;
+      margin-left: 1px;
+    }
+    /* 숫자 입력창의 상하단 스피너 화살표 완전 제거 (모던 클린 디자인) */
+    .num-input-val::-webkit-outer-spin-button,
+    .num-input-val::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+      display: none;
+    }
+    .num-input-val[type=number] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    /* 간편 제작 모드 / 상세 조정 모드 토글 규칙 */
+    body.mode-simple .pro-only {
+      display: none !important;
+    }
+    body.mode-pro .simple-only {
+      display: none !important;
+    }
+    .mode-tab-active {
+      background-color: #4f46e5 !important;
+      color: #ffffff !important;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    /* 완벽한 뷰포트 높이 일치 및 이중 스크롤 방지 */
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    @media (min-width: 768px) {
+      #editorSidebar {
+        display: flex !important;
+        height: 100% !important;
+      }
+      #previewWorkspace {
+        display: flex !important;
+        height: 100% !important;
+      }
+    }
+
+    /* 캔버스 자동 뷰포트 피팅 및 비율 유지 */
+    #canvasViewport {
+      flex: 1 1 0%;
+      min-height: 0;
+      min-width: 0;
+    }
+    #canvasContainer {
+      max-width: 100%;
+      max-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #mainCanvas {
+      max-width: 100% !important;
+      max-height: 100% !important;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white mode-simple overflow-hidden">
+
+  <!-- Header -->
+  <header class="flex-shrink-0 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2 h-[58px]">
+    <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+      <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-500 to-teal-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+      <div class="truncate">
+        <h1 class="text-sm sm:text-lg font-bold tracking-tight text-white flex items-center gap-1.5 sm:gap-2 truncate">
+          <span>카드뉴스 <span class="hidden sm:inline">올인원 스튜디오</span></span>
+          <span class="hidden md:inline-flex text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">표지·본문·마무리</span>
+        </h1>
+        <p class="text-[10px] sm:text-xs text-slate-400 hidden lg:block">보도·시사·이슈 인스타그램 카드뉴스 3단 구성 생성 도구</p>
+      </div>
+    </div>
+
+    <!-- Quick action buttons -->
+    <div class="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+      <button id="resetPresetBtn" class="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition-colors flex items-center gap-1">
+        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <span class="hidden md:inline">예시 리셋</span>
+      </button>
+
+      <button id="downloadBtn" title="현재 보고 있는 페이지만 PNG로 다운로드" class="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-200 text-xs sm:text-sm font-semibold transition-all flex items-center gap-1 shadow">
+        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        <span class="hidden sm:inline">현재 </span><span>PNG</span>
+      </button>
+
+      <button id="downloadAllBtn" title="모든 슬라이드를 ZIP 압축 파일로 한 번에 다운로드" class="px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all transform active:scale-95 flex items-center gap-1.5">
+        <span class="text-xs sm:text-sm">📦</span>
+        <span class="hidden sm:inline">전체 </span><span>ZIP</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile View Mode Switcher (Visible only on screens < md) -->
+  <div id="mobileViewTabs" class="flex-shrink-0 md:hidden flex items-center border-b border-slate-800 bg-slate-900/95 backdrop-blur-md sticky top-[58px] z-30 px-3 py-2 gap-2 shadow-md">
+    <button type="button" id="mobileTabEditorBtn" class="flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-indigo-600 text-white shadow-sm">
+      <span>✏️ 편집 패널</span>
+    </button>
+    <button type="button" id="mobileTabPreviewBtn" class="flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-slate-800/90 text-slate-300 hover:text-white">
+      <span>👁️ 카드뉴스 미리보기</span>
+      <span id="mobileSlideBadge" class="px-1.5 py-0.5 text-[10px] rounded bg-indigo-500/20 text-indigo-300 font-mono">1/3</span>
+    </button>
+  </div>
+
+  <!-- Main Workspace: 100% matched height, zero overflow -->
+  <main class="flex-1 min-h-0 w-full flex flex-col md:flex-row overflow-hidden relative">
+    
+    <!-- Left Sidebar: Controls (Exact 100% matched height, internal scroll) -->
+    <aside id="editorSidebar" class="w-full md:w-[380px] lg:w-[440px] xl:w-[480px] h-full bg-slate-900 border-r border-slate-800 flex flex-col overflow-y-auto flex-shrink-0">
+      
+      <div class="p-5 space-y-6">
+
+        <!-- 0-A. Work Mode Switcher (간편 제작 vs 상세 조정) -->
+        <section class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/50 p-3.5 rounded-xl border border-indigo-500/30 shadow-lg space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-xs font-bold text-slate-200">에디터 작업 모드</span>
+            </div>
+            <span id="workModeBadge" class="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">⚡ 간편 제작 모드</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-950/80 rounded-lg border border-slate-800" id="workModeToggleGroup">
+            <button type="button" data-work-mode="simple" class="work-mode-btn py-2 px-2 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all mode-tab-active">
+              <span class="text-sm">⚡</span>
+              <span>간편 제작 모드</span>
+            </button>
+            <button type="button" data-work-mode="pro" class="work-mode-btn py-2 px-2 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+              <span class="text-sm">🛠️</span>
+              <span>상세 조정 모드</span>
+            </button>
+          </div>
+          
+          <div class="text-[11px] text-slate-400 leading-relaxed bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+            <p class="simple-only text-emerald-300/95 flex items-center gap-1.5">
+              <span>⚡</span> <span><strong>간편 모드</strong>: 핵심 내용만 빠르게 입력하여 10초 만에 카드뉴스를 완성합니다.</span>
+            </p>
+            <p class="pro-only text-indigo-300/95 flex items-center gap-1.5">
+              <span>🛠️</span> <span><strong>상세 모드</strong>: 폰트 종류, 크기, 정밀 위치(Y), 슬라이더 수치 및 컬러를 직접 조정합니다.</span>
+            </p>
+          </div>
+        </section>
+
+        <!-- 0-P. 프리셋 및 전체 덱 구성 보관함 (저장 / 불러오기) -->
+        <section id="presetVaultSection" class="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/40 p-3.5 rounded-xl border border-indigo-500/30 shadow-lg space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+              <span class="text-xs font-bold text-slate-200">설정 보관함 (저장 / 불러오기)</span>
+            </div>
+            <span id="presetCountBadge" class="text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">스타일 4종 · 덱 4종</span>
+          </div>
+
+          <!-- 서브 탭: [🎨 스타일 프리셋] vs [📚 전체 덱 구성 (N장 세트)] -->
+          <div class="grid grid-cols-2 gap-1 p-0.5 bg-slate-950/90 rounded-lg border border-slate-800">
+            <button type="button" id="vaultTabStyleBtn" class="py-1.5 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 transition-all bg-indigo-600 text-white shadow-sm">
+              <span>🎨 스타일 프리셋</span>
+            </button>
+            <button type="button" id="vaultTabDeckBtn" class="py-1.5 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+              <span>📚 전체 덱 구성</span>
+            </button>
+          </div>
+
+          <!-- 패널 1: 단일 스타일 프리셋 (기존 기능 100% 보존) -->
+          <div id="vaultPanelStyle" class="space-y-3">
+            <!-- 프리셋 선택 및 적용 컨트롤 -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-[11px] text-slate-300 font-semibold">스타일 프리셋 불러오기</label>
+                <span class="text-[10px] text-slate-400">폰트·색상·출처·필터 등</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <select id="presetSelect" class="flex-1 px-2.5 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-medium">
+                  <!-- JavaScript renders options dynamically -->
+                </select>
+                <button type="button" id="applyPresetBtn" class="px-2.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-1 flex-shrink-0" title="현재 슬라이드에 선택한 프리셋 스타일을 적용합니다.">
+                  <span>적용</span>
+                </button>
+                <button type="button" id="applyAllPresetBtn" class="px-2 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-700 transition-all flex items-center gap-1 flex-shrink-0" title="모든 슬라이드(전체 페이지)에 일괄 적용합니다.">
+                  <span>전체적용</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 프리셋 저장 컨트롤 (새 프리셋으로 저장) -->
+            <div class="pt-2 border-t border-slate-800/80 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-300 font-semibold">현재 상세 설정값 저장</span>
+                <button type="button" id="toggleSavePresetFormBtn" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 transition-colors">
+                  <span id="toggleSavePresetIcon">➕</span> <span id="toggleSavePresetText">새 프리셋 등록</span>
+                </button>
+              </div>
+              
+              <div id="savePresetForm" class="hidden space-y-2 bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+                <div class="flex items-center gap-1.5">
+                  <input type="text" id="newPresetNameInput" placeholder="프리셋 이름 (예: 브랜드 공식 스타일)" class="flex-1 px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                  <button type="button" id="saveNewPresetBtn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-all flex-shrink-0 shadow">
+                    저장
+                  </button>
+                  <button type="button" id="cancelSavePresetBtn" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-xs rounded-lg transition-all flex-shrink-0">
+                    취소
+                  </button>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-tight">💡 폰트, 자간/행간, 그림자, 색상, 배지, 필터, 출처 표기 위치/스타일 등 현재 상세 설정값이 브라우저에 안전하게 저장됩니다.</p>
+              </div>
+            </div>
+
+            <!-- 백업 & 파일 관리: JSON 내보내기 / 가져오기 / 삭제 -->
+            <div class="pt-1 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/60">
+              <div class="flex items-center gap-1.5">
+                <button type="button" id="exportPresetJsonBtn" class="hover:text-slate-200 transition-colors flex items-center gap-1 text-[10px] bg-slate-800/80 hover:bg-slate-800 px-2 py-1 rounded border border-slate-700/60" title="저장된 프리셋 목록을 JSON 파일로 백업 다운로드합니다.">
+                  <span>⬇️ JSON 백업</span>
+                </button>
+                <label for="importPresetJsonInput" class="hover:text-slate-200 cursor-pointer transition-colors flex items-center gap-1 text-[10px] bg-slate-800/80 hover:bg-slate-800 px-2 py-1 rounded border border-slate-700/60" title="JSON 백업 파일에서 프리셋을 불러옵니다.">
+                  <span>⬆️ JSON 가져오기</span>
+                  <input type="file" id="importPresetJsonInput" accept=".json,application/json" class="hidden">
+                </label>
+              </div>
+              <button type="button" id="deletePresetBtn" class="text-[10px] text-rose-400/80 hover:text-rose-300 transition-colors flex items-center gap-0.5 disabled:opacity-30 disabled:pointer-events-none" title="선택한 사용자 프리셋을 삭제합니다.">
+                <span>🗑️ 선택 삭제</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 패널 2: 전체 덱 구성 (N장 세트 전체 저장 및 불러오기) -->
+          <div id="vaultPanelDeck" class="hidden space-y-3">
+            <!-- 덱 선택 및 적용 컨트롤 -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-[11px] text-slate-300 font-semibold">전체 덱 구성 불러오기</label>
+                <span class="text-[10px] text-emerald-400 font-medium" id="currentDeckStatusBadge">현재 3장 제작 중</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <select id="deckSelect" class="flex-1 px-2.5 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-medium">
+                  <!-- JavaScript renders deck options dynamically -->
+                </select>
+                <button type="button" id="loadDeckBtn" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-1 flex-shrink-0" title="선택한 전체 덱(페이지 수 + 구성 전체)을 작업창에 불러옵니다.">
+                  <span>불러오기</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 현재 덱 저장 컨트롤 -->
+            <div class="pt-2 border-t border-slate-800/80 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-300 font-semibold">현재 전체 페이지(N장) 구성 저장</span>
+                <button type="button" id="toggleSaveDeckFormBtn" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 transition-colors">
+                  <span id="toggleSaveDeckIcon">➕</span> <span id="toggleSaveDeckText">현재 덱 저장</span>
+                </button>
+              </div>
+
+              <div id="saveDeckForm" class="hidden space-y-2 bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+                <div class="flex items-center gap-1.5">
+                  <input type="text" id="newDeckNameInput" placeholder="덱 이름 (예: 주간 시사 브리핑 5장 팩)" class="flex-1 px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                  <button type="button" id="saveNewDeckBtn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-all flex-shrink-0 shadow">
+                    저장
+                  </button>
+                  <button type="button" id="cancelSaveDeckBtn" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-xs rounded-lg transition-all flex-shrink-0">
+                    취소
+                  </button>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-tight">💡 현재 작업 중인 <strong>총 페이지 수, 표지/본문/엔딩 구성 순서, 입력된 텍스트와 폰트, 색상, 레이아웃 전체</strong>가 저장됩니다.</p>
+              </div>
+            </div>
+
+            <!-- 덱 백업 & 파일 관리: JSON 내보내기 / 가져오기 / 삭제 -->
+            <div class="pt-1 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/60">
+              <div class="flex items-center gap-1.5">
+                <button type="button" id="exportDeckJsonBtn" class="hover:text-slate-200 transition-colors flex items-center gap-1 text-[10px] bg-slate-800/80 hover:bg-slate-800 px-2 py-1 rounded border border-slate-700/60" title="저장된 덱 구성들을 JSON 파일로 백업 다운로드합니다.">
+                  <span>⬇️ 덱 JSON 백업</span>
+                </button>
+                <label for="importDeckJsonInput" class="hover:text-slate-200 cursor-pointer transition-colors flex items-center gap-1 text-[10px] bg-slate-800/80 hover:bg-slate-800 px-2 py-1 rounded border border-slate-700/60" title="JSON 백업 파일에서 덱 구성을 불러옵니다.">
+                  <span>⬆️ 덱 JSON 가져오기</span>
+                  <input type="file" id="importDeckJsonInput" accept=".json,application/json" class="hidden">
+                </label>
+              </div>
+              <button type="button" id="deleteDeckBtn" class="text-[10px] text-rose-400/80 hover:text-rose-300 transition-colors flex items-center gap-0.5 disabled:opacity-30 disabled:pointer-events-none" title="선택한 사용자 덱을 삭제합니다.">
+                <span>🗑️ 선택 삭제</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 0-B. Template Type Selector (Cover vs Body vs Ending) -->
+        <section class="space-y-2 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> 템플릿 유형 선택
+            </label>
+            <span id="currentTemplateBadge" class="text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">표지 (Cover)</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900 rounded-lg border border-slate-800" id="templateTabs">
+            <button type="button" data-template="cover" class="template-tab-btn py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center gap-1 transition-all border border-indigo-500 bg-indigo-500/20 text-white shadow-sm">
+              <span class="text-sm">🏷️</span>
+              <span>1. 표지 커버</span>
+            </button>
+            <button type="button" data-template="body" class="template-tab-btn py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center gap-1 transition-all border border-transparent bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+              <span class="text-sm">📄</span>
+              <span>2. 본문 내용</span>
+            </button>
+            <button type="button" data-template="ending" class="template-tab-btn py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center gap-1 transition-all border border-transparent bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+              <span class="text-sm">🏁</span>
+              <span>3. 마무리 엔딩</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 1. Ratio & Preset Selection -->
+        <section class="space-y-3">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block">1. 캔버스 규격 (Aspect Ratio)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" data-ratio="4:5" class="ratio-btn px-3 py-2 rounded-lg border text-xs font-semibold flex flex-col items-center gap-1 transition-all border-indigo-500 bg-indigo-500/10 text-indigo-300">
+              <span class="text-sm">4 : 5</span>
+              <span class="text-[10px] text-slate-400">인스타 피드 (1080x1350)</span>
+            </button>
+            <button type="button" data-ratio="1:1" class="ratio-btn px-3 py-2 rounded-lg border border-slate-800 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-xs font-semibold flex flex-col items-center gap-1 transition-all">
+              <span class="text-sm">1 : 1</span>
+              <span class="text-[10px] text-slate-400">정사각형 (1080x1080)</span>
+            </button>
+            <button type="button" data-ratio="9:16" class="ratio-btn px-3 py-2 rounded-lg border border-slate-800 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-xs font-semibold flex flex-col items-center gap-1 transition-all">
+              <span class="text-sm">9 : 16</span>
+              <span class="text-[10px] text-slate-400">스토리/릴스 (1080x1920)</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 2. Image Upload & Adjustment -->
+        <section class="space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span> 2. 배경 사진 & 필터 설정
+            </label>
+            <span class="text-[11px] text-slate-400">캔버스 드래그 이동 가능</span>
+          </div>
+
+          <!-- Drag and drop upload box -->
+          <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 transition-colors rounded-xl p-3.5 text-center cursor-pointer bg-slate-900/50 group">
+            <input type="file" id="imageInput" accept="image/*" class="hidden">
+            <svg class="w-6 h-6 mx-auto text-slate-400 group-hover:text-indigo-400 transition-colors mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <p class="text-xs font-semibold text-slate-300">클릭하거나 사진을 이곳에 드래그하세요</p>
+            <p class="text-[10px] text-slate-500 mt-0.5">JPG, PNG, WEBP 지원</p>
+          </div>
+
+          <!-- Quick Action Buttons: Flip & Reset -->
+          <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] font-semibold text-slate-400">사진 방향 / 리셋</span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" id="flipHBtn" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-medium text-slate-300 flex items-center gap-1 transition-all" title="좌우 반전">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                좌우 반전
+              </button>
+              <button type="button" id="flipVBtn" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-medium text-slate-300 flex items-center gap-1 transition-all" title="상하 반전">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4"></path></svg>
+                상하 반전
+              </button>
+              <button type="button" id="resetPhotoFiltersBtn" class="px-2 py-1 rounded bg-slate-800/60 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-400 hover:text-slate-200 transition-all" title="사진 보정값 초기화">
+                초기화
+              </button>
+            </div>
+          </div>
+
+          <!-- 1. 원클릭 무드 필터 프리셋 -->
+          <div>
+            <label class="text-[11px] font-semibold text-slate-300 block mb-1.5">무드 필터 프리셋 (1-Click Mood)</label>
+            <div class="grid grid-cols-3 gap-1.5" id="filterPresetGroup">
+              <button type="button" data-filter="normal" class="filter-preset-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all text-center">
+                ✨ 원본 (Normal)
+              </button>
+              <button type="button" data-filter="cinematic" class="filter-preset-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                🎬 시네마틱 다크
+              </button>
+              <button type="button" data-filter="mono" class="filter-preset-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                🖤 흑백 (Noir)
+              </button>
+              <button type="button" data-filter="vivid" class="filter-preset-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                🎨 비비드 (선명)
+              </button>
+              <button type="button" data-filter="vintage" class="filter-preset-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                ☕ 빈티지 웜
+              </button>
+              <button type="button" data-filter="matte" class="filter-preset-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                🌫️ 소프트 매트
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. 기본 스케일 및 위치 (간편/상세 모드 공통 지원) -->
+          <div class="space-y-3 pt-2 border-t border-slate-800/80">
+            <span class="text-[11px] font-semibold text-slate-300 block">사진 크기 및 위치 조정</span>
+            <div>
+              <div class="flex justify-between items-center text-xs text-slate-300 mb-1">
+                <span>사진 확대 / 축소 (Zoom)</span>
+                <div class="num-input-wrap">
+                  <input id="zoomInput" type="number" min="0.5" max="3.0" step="0.1" value="1.0" class="num-input-val">
+                  <span class="num-input-unit">x</span>
+                </div>
+              </div>
+              <input id="zoomSlider" type="range" min="0.5" max="3.0" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                  <span>가로 위치 (X)</span>
+                  <div class="num-input-wrap">
+                    <input id="panXInput" type="number" min="-500" max="500" step="1" value="0" class="num-input-val">
+                    <span class="num-input-unit">px</span>
+                  </div>
+                </div>
+                <input id="panXSlider" type="range" min="-500" max="500" step="2" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+              </div>
+              <div>
+                <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                  <span>세로 위치 (Y)</span>
+                  <div class="num-input-wrap">
+                    <input id="panYInput" type="number" min="-500" max="500" step="1" value="0" class="num-input-val">
+                    <span class="num-input-unit">px</span>
+                  </div>
+                </div>
+                <input id="panYSlider" type="range" min="-500" max="500" step="2" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 세부 톤 & 질감 보정 슬라이더 (상세 모드 전용) -->
+          <div class="pro-only space-y-3 pt-2 border-t border-slate-800/80">
+            <span class="text-[11px] font-semibold text-slate-300 block">정밀 톤 & 가독성 효과</span>
+              
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                    <span>밝기 (Brightness)</span>
+                    <div class="num-input-wrap">
+                      <input id="brightInput" type="number" min="40" max="160" step="1" value="100" class="num-input-val">
+                      <span class="num-input-unit">%</span>
+                    </div>
+                  </div>
+                  <input id="brightSlider" type="range" min="40" max="160" step="1" value="100" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                    <span>대비 (Contrast)</span>
+                    <div class="num-input-wrap">
+                      <input id="contrastInput" type="number" min="40" max="160" step="1" value="100" class="num-input-val">
+                      <span class="num-input-unit">%</span>
+                    </div>
+                  </div>
+                  <input id="contrastSlider" type="range" min="40" max="160" step="1" value="100" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                    <span>채도 (Saturation)</span>
+                    <div class="num-input-wrap">
+                      <input id="saturateInput" type="number" min="0" max="200" step="1" value="100" class="num-input-val">
+                      <span class="num-input-unit">%</span>
+                    </div>
+                  </div>
+                  <input id="saturateSlider" type="range" min="0" max="200" step="2" value="100" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                    <span>배경 흐림 (Blur)</span>
+                    <div class="num-input-wrap">
+                      <input id="blurInput" type="number" min="0" max="25" step="0.5" value="0" class="num-input-val">
+                      <span class="num-input-unit">px</span>
+                    </div>
+                  </div>
+                  <input id="blurSlider" type="range" min="0" max="25" step="1" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+              </div>
+
+              <!-- 비네팅 (Vignette) -->
+              <div>
+                <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                  <span>가장자리 어둡게 (비네팅)</span>
+                  <div class="num-input-wrap">
+                    <input id="vignetteInput" type="number" min="0" max="90" step="1" value="0" class="num-input-val">
+                    <span class="num-input-unit">%</span>
+                  </div>
+                </div>
+                <input id="vignetteSlider" type="range" min="0" max="90" step="5" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+              </div>
+
+              <!-- 컬러 틴트 오버레이 (Tint) -->
+              <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 space-y-2">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="text-slate-300 font-medium">색상 틴트 오버레이</span>
+                  <div class="flex items-center gap-2">
+                    <div class="num-input-wrap">
+                      <input id="tintOpacityInput" type="number" min="0" max="80" step="1" value="0" class="num-input-val">
+                      <span class="num-input-unit">%</span>
+                    </div>
+                    <input type="color" id="tintColorPicker" value="#0f172a" class="w-5 h-5 rounded cursor-pointer border border-slate-700 bg-transparent">
+                  </div>
+                </div>
+                <input id="tintOpacitySlider" type="range" min="0" max="80" step="5" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+              </div>
+          </div>
+        </section>
+
+        <!-- 3. Text Overlay Configuration -->
+        <section class="space-y-4">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block">3. 템플릿 상세 설정</label>
+            <span id="panelModeBadge" class="text-[10px] text-indigo-400 font-semibold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">표지 모드</span>
+          </div>
+
+          <!-- 3-0. 공통 출처 / 자료 표기 (Credit & Source - 모든 표지스타일/본문/엔딩 공통 지원) -->
+          <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 space-y-3 shadow-md">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 출처 / 자료 표기 (Credit)
+              </span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="showCredit" checked class="sr-only peer">
+                <div class="w-8 h-4.5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+
+            <!-- 간편 / 상세 모드 공통: 입력창, 빠른 접두어, 표기 위치 -->
+            <div class="space-y-2.5">
+              <input type="text" id="creditText" value="배경 이미지: 서울경제 권욱 기자" placeholder="예: 배경 이미지: 서울경제 권욱 기자 / 자료: 통계청" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+              
+              <!-- 원클릭 출처 접두어 칩 -->
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[10px] text-slate-400 font-medium">빠른 접두어:</span>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="사진: ">사진:</button>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="출처: ">출처:</button>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="자료: ">자료:</button>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="취재: ">취재:</button>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="그래픽: ">그래픽:</button>
+              </div>
+
+              <!-- 출처 표기 위치 선택 (간편 / 상세 공통 사용 가능) -->
+              <div class="pt-1">
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-[11px] font-semibold text-slate-300">출처 표기 위치</label>
+                  <span class="text-[10px] text-slate-400 font-normal">좌상 / 우상 / 좌하 / 우하 / 세로</span>
+                </div>
+                <div class="grid grid-cols-5 gap-1" id="creditPosGroup">
+                  <button type="button" data-credit-pos="top-left" class="credit-pos-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium border-indigo-500 bg-indigo-500/20 text-white transition-all text-center" title="좌측 상단">
+                    ↖ 좌상
+                  </button>
+                  <button type="button" data-credit-pos="top-right" class="credit-pos-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center" title="우측 상단">
+                    ↗ 우상
+                  </button>
+                  <button type="button" data-credit-pos="bottom-left" class="credit-pos-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center" title="좌측 하단">
+                    ↙ 좌하
+                  </button>
+                  <button type="button" data-credit-pos="bottom-right" class="credit-pos-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center" title="우측 하단">
+                    ↘ 우하
+                  </button>
+                  <button type="button" data-credit-pos="vertical-right" class="credit-pos-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center" title="우측 세로">
+                    ▮ 세로
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 상세 모드 전용: 다양한 출처 표기 방식 (스타일, 크기, 불투명도) -->
+            <div class="pro-only space-y-3 pt-2.5 border-t border-slate-800/80">
+
+              <!-- 2. 표기 스타일 선택 (4가지) -->
+              <div>
+                <label class="text-[11px] font-semibold text-slate-300 block mb-1.5">표기 디자인 스타일</label>
+                <div class="grid grid-cols-2 gap-1.5" id="creditStyleGroup">
+                  <button type="button" data-credit-style="minimal" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-indigo-500 bg-indigo-500/20 text-white transition-all text-center">
+                    ✨ 미니멀 텍스트
+                  </button>
+                  <button type="button" data-credit-style="dark-pill" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                    🌑 다크 캡슐 배지
+                  </button>
+                  <button type="button" data-credit-style="light-pill" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                    ⚪ 라이트 캡슐 배지
+                  </button>
+                  <button type="button" data-credit-style="accent-bar" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                    ▎포인트 바 스타일
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3. 글자 크기 & 불투명도 슬라이더 -->
+              <div class="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                    <span>글자 크기</span>
+                    <div class="num-input-wrap">
+                      <input id="creditSizeInput" type="number" min="14" max="32" step="1" value="20" class="num-input-val">
+                      <span class="num-input-unit">px</span>
+                    </div>
+                  </div>
+                  <input id="creditSizeSlider" type="range" min="14" max="32" step="1" value="20" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                    <span>불투명도</span>
+                    <div class="num-input-wrap">
+                      <input id="creditOpacityInput" type="number" min="40" max="100" step="5" value="85" class="num-input-val">
+                      <span class="num-input-unit">%</span>
+                    </div>
+                  </div>
+                  <input id="creditOpacitySlider" type="range" min="40" max="100" step="5" value="85" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3-1. COVER CONFIG PANEL (표지 커버 설정) -->
+          <div id="coverConfigPanel" class="space-y-4">
+
+            <!-- 표지 디자인 스타일 3종 선택 -->
+            <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> 표지 디자인 스타일 (3종)
+                </span>
+                <span class="text-[10px] text-indigo-400 font-semibold" id="coverStyleLabel">에디토리얼</span>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5" id="coverStylePresetGroup">
+                <button type="button" data-cover-style="editorial" class="cover-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all">
+                  <span class="text-base">📰</span>
+                  <span>에디토리얼</span>
+                </button>
+                <button type="button" data-cover-style="magazine-frame" class="cover-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all">
+                  <span class="text-base">🖼️</span>
+                  <span>매거진 프레임</span>
+                </button>
+                <button type="button" data-cover-style="sticker-bold" class="cover-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all">
+                  <span class="text-base">🏷️</span>
+                  <span>스티커 팁</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 매거진 프레임 전용 세부 설정 -->
+            <div id="coverMagazineOptions" class="hidden bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <span class="text-sm">🖼️</span> 매거진 프레임 상세 옵션
+                </span>
+                <span class="text-[10px] text-slate-400">외곽 액자 스타일</span>
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">상단 에디션 / 날짜 스탬프</label>
+                <input type="text" id="coverIssueTagText" value="✦ VOL. 09 · MONTHLY ISSUE · 2026.09 ✦" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">하단 큐레이터 / 서명 태그</label>
+                <input type="text" id="coverCuratorText" value="CURATED BY @CARDNEWS_STUDIO" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                <span>프레임 테두리 색상</span>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="coverFrameColorPicker" value="#ffffff" class="w-5 h-5 rounded cursor-pointer border border-slate-700 bg-transparent">
+                  <div class="flex items-center gap-1" id="coverFrameColorPresets">
+                    <button type="button" data-color="#ffffff" class="w-4 h-4 rounded-full bg-white ring-1 ring-slate-400" title="화이트"></button>
+                    <button type="button" data-color="#fef08a" class="w-4 h-4 rounded-full bg-yellow-200" title="아이보리 골드"></button>
+                    <button type="button" data-color="#38bdf8" class="w-4 h-4 rounded-full bg-sky-400" title="스카이"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 스티커 팁 전용 세부 설정 -->
+            <div id="coverStickerOptions" class="hidden bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <span class="text-sm">🏷️</span> 스티커 팁 상세 옵션
+                </span>
+                <span class="text-[10px] text-slate-400">형광펜 박스 강조</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="space-y-1">
+                  <label class="text-[11px] text-slate-400">넘버링 (Number)</label>
+                  <input type="text" id="coverStickerNumberText" value="TIP 01" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-mono text-amber-300 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[11px] text-slate-400">카테고리 라벨</label>
+                  <input type="text" id="coverStickerCategoryText" value="TREND & TECH" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+                </div>
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">하단 펀치라인 라벨</label>
+                <input type="text" id="coverStickerSubText" value="3분 완성 실전 꿀팁 ➔" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                <span>하이라이트 배경 색상</span>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="coverStickerColorPicker" value="#facc15" class="w-5 h-5 rounded cursor-pointer border border-slate-700 bg-transparent">
+                  <div class="flex items-center gap-1" id="coverStickerPresets">
+                    <button type="button" data-color="#facc15" class="w-4 h-4 rounded-full bg-yellow-400 ring-2 ring-white ring-offset-1 ring-offset-slate-900" title="형광 옐로우"></button>
+                    <button type="button" data-color="#4ade80" class="w-4 h-4 rounded-full bg-green-400" title="네온 그린"></button>
+                    <button type="button" data-color="#38bdf8" class="w-4 h-4 rounded-full bg-sky-400" title="네온 블루"></button>
+                    <button type="button" data-color="#f43f5e" class="w-4 h-4 rounded-full bg-rose-500" title="비비드 레드"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          <!-- 3-A. Main Headline -->
+          <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> 메인 헤드라인 (Headline)
+              </span>
+              <span class="text-[10px] text-slate-400">Enter로 줄바꿈</span>
+            </div>
+            
+            <textarea id="headlineText" rows="2" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm font-bold text-white focus:outline-none focus:border-indigo-500 resize-none">2026년 9월 4주차
+일간 이슈 정리</textarea>
+
+            <!-- 상세 모드 전용: 헤드라인 서체, 정렬, 오프셋, 크기, 스타일, 색상 -->
+            <div class="pro-only space-y-3.5 pt-1 border-t border-slate-800/80">
+              <!-- 1. 폰트 서체 선택 -->
+              <div>
+                <label class="text-[11px] font-semibold text-slate-300 block mb-1.5">헤드라인 글꼴 (Font Family)</label>
+                <select id="headlineFontSelect" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                  <option value="'Pretendard', sans-serif">프리텐다드 (Pretendard) - 모던 고딕 [기본]</option>
+                  <option value="'GmarketSansBold', sans-serif">지마켓 산스 (Gmarket Sans) - 강력한 볼드</option>
+                  <option value="'Black Han Sans', sans-serif">검은고딕 (Black Han Sans) - 극강의 임팩트</option>
+                  <option value="'Noto Serif KR', serif">노토 명조 (Noto Serif) - 품격 있는 시사/보도</option>
+                  <option value="'Nanum Myeongjo', serif">나눔명조 (Nanum Myeongjo) - 클래식 감성</option>
+                </select>
+              </div>
+
+              <!-- 2. 정렬 및 세로 배치 -->
+              <div class="grid grid-cols-2 gap-2.5 pt-1">
+                <div>
+                  <label class="text-[11px] text-slate-400 block mb-1">가로 정렬</label>
+                  <div class="grid grid-cols-3 gap-1" id="headlineAlignGroup">
+                    <button type="button" data-align="left" class="hl-align-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all text-center">
+                      좌측
+                    </button>
+                    <button type="button" data-align="center" class="hl-align-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      중앙
+                    </button>
+                    <button type="button" data-align="right" class="hl-align-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      우측
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-[11px] text-slate-400 block mb-1">세로 위치</label>
+                  <div class="grid grid-cols-3 gap-1" id="headlineVPosGroup">
+                    <button type="button" data-vpos="top" class="hl-vpos-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      상단
+                    </button>
+                    <button type="button" data-vpos="middle" class="hl-vpos-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      중앙
+                    </button>
+                    <button type="button" data-vpos="bottom" class="hl-vpos-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all text-center">
+                      하단
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. 수직 위치 미세 이동 (Y Offset) -->
+              <div>
+                <div class="flex justify-between items-center text-[11px] text-slate-400 mb-1">
+                  <span>위치 미세 조정 (상/하 이동)</span>
+                  <div class="num-input-wrap">
+                    <input id="headlineOffsetYInput" type="number" min="-250" max="250" step="1" value="0" class="num-input-val">
+                    <span class="num-input-unit">px</span>
+                  </div>
+                </div>
+                <input id="headlineOffsetY" type="range" min="-250" max="250" step="5" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+              </div>
+
+              <!-- 4. 글자 크기 & 줄 간격 -->
+              <div class="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-400 mb-1">
+                    <span>글자 크기</span>
+                    <div class="num-input-wrap">
+                      <input id="headlineSizeInput" type="number" min="36" max="120" step="1" value="68" class="num-input-val">
+                      <span class="num-input-unit">px</span>
+                    </div>
+                  </div>
+                  <input id="headlineSize" type="range" min="36" max="100" step="1" value="68" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-400 mb-1">
+                    <span>줄 간격</span>
+                    <div class="num-input-wrap">
+                      <input id="headlineLineHeightInput" type="number" min="0.80" max="2.00" step="0.01" value="1.18" class="num-input-val">
+                      <span class="num-input-unit">배</span>
+                    </div>
+                  </div>
+                  <input id="headlineLineHeight" type="range" min="0.95" max="1.6" step="0.02" value="1.18" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+              </div>
+
+              <!-- 5. 텍스트 효과 스타일 (그림자 / 외곽선 / 박스 라벨) -->
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">텍스트 효과 스타일</label>
+                <div class="grid grid-cols-4 gap-1.5" id="headlineStyleGroup">
+                  <button type="button" data-style="soft-shadow" class="hl-style-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all text-center">
+                    부드러운 입체
+                  </button>
+                  <button type="button" data-style="deep-shadow" class="hl-style-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                    짙은 그림자
+                  </button>
+                  <button type="button" data-style="stroke" class="hl-style-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                    외곽선
+                  </button>
+                  <button type="button" data-style="box" class="hl-style-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                    블랙 박스
+                  </button>
+                </div>
+              </div>
+
+              <!-- 6. 텍스트 컬러 선택 -->
+              <div class="space-y-1.5 pt-1">
+                <div class="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>글자 색상</span>
+                  <div class="flex items-center gap-2">
+                    <span id="headlineColorHex" class="font-mono text-slate-300 text-[10px]">#FFFFFF</span>
+                    <input type="color" id="headlineColorPicker" value="#ffffff" class="w-5 h-5 rounded cursor-pointer border border-slate-700 bg-transparent">
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5" id="headlineColorPresets">
+                  <button type="button" data-color="#ffffff" title="화이트" class="w-5 h-5 rounded-full bg-white ring-2 ring-indigo-500 ring-offset-1 ring-offset-slate-900 transition-all"></button>
+                  <button type="button" data-color="#fef08a" title="소프트 옐로우 (속보)" class="w-5 h-5 rounded-full bg-yellow-200 transition-all"></button>
+                  <button type="button" data-color="#facc15" title="비비드 옐로우" class="w-5 h-5 rounded-full bg-amber-400 transition-all"></button>
+                  <button type="button" data-color="#38bdf8" title="스카이 블루" class="w-5 h-5 rounded-full bg-sky-400 transition-all"></button>
+                  <button type="button" data-color="#4ade80" title="네온 그린" class="w-5 h-5 rounded-full bg-emerald-400 transition-all"></button>
+                  <button type="button" data-color="#0f172a" title="다크 블랙" class="w-5 h-5 rounded-full bg-slate-900 border border-slate-600 transition-all"></button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 3-B. Subtitle / Issue Keyword -->
+          <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> 서브타이틀 / 이슈 키워드
+              </span>
+              <input type="checkbox" id="showSubtitle" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+            </div>
+
+            <div id="subControlPanel" class="space-y-3">
+              <input type="text" id="subtitleText" value="북중미 정상회담부터 조희대 재제청 논란까지" placeholder="키워드나 부제목을 입력하세요" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+
+              <!-- 상세 모드 전용: 서브타이틀 위치, 서체, 크기, 색상 -->
+              <div class="pro-only space-y-3 pt-1 border-t border-slate-800/80">
+                <!-- 서브타이틀 배치 모드 -->
+                <div>
+                  <label class="text-[11px] text-slate-400 block mb-1">배치 위치 방식</label>
+                  <div class="grid grid-cols-3 gap-1.5" id="subPositionGroup">
+                    <button type="button" data-subpos="below-headline" class="sub-pos-btn px-2 py-1.5 rounded-lg border text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      제목 바로 아래
+                    </button>
+                    <button type="button" data-subpos="bottom-opposite" class="sub-pos-btn px-2 py-1.5 rounded-lg border text-[10px] font-medium border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all text-center">
+                      우측 하단 분리
+                    </button>
+                    <button type="button" data-subpos="above-headline" class="sub-pos-btn px-2 py-1.5 rounded-lg border text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      제목 바로 위
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 서브타이틀 글꼴 및 크기 -->
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="text-[11px] text-slate-400 block mb-1">서브 서체</label>
+                    <select id="subFontSelect" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                      <option value="inherit">헤드라인과 동일</option>
+                      <option value="'Pretendard', sans-serif">프리텐다드 고딕</option>
+                      <option value="'Noto Serif KR', serif">노토 명조</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div class="flex justify-between items-center text-[11px] text-slate-400 mb-1">
+                      <span>크기</span>
+                      <div class="num-input-wrap">
+                        <input id="subSizeInput" type="number" min="14" max="72" step="1" value="32" class="num-input-val">
+                        <span class="num-input-unit">px</span>
+                      </div>
+                    </div>
+                    <input id="subSize" type="range" min="18" max="52" step="1" value="32" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                  </div>
+                </div>
+
+                <!-- 서브타이틀 색상 -->
+                <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+                  <div class="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>서브텍스트 색상</span>
+                    <div class="flex items-center gap-2">
+                      <span id="subTextColorHex" class="font-mono text-slate-300 text-[10px]">#FFFFFF</span>
+                      <input type="color" id="subColorPicker" value="#ffffff" class="w-5 h-5 rounded cursor-pointer border border-slate-700 bg-transparent">
+                    </div>
+                  </div>
+                  <!-- 서브텍스트 색상 프리셋 버튼들 -->
+                  <div class="flex items-center gap-1.5" id="subColorPresets">
+                    <button type="button" data-subcolor="#ffffff" title="화이트 (기본)" class="w-5 h-5 rounded-full bg-white ring-2 ring-indigo-500 ring-offset-1 ring-offset-slate-900 transition-all"></button>
+                    <button type="button" data-subcolor="#fde047" title="소프트 옐로우" class="w-5 h-5 rounded-full bg-yellow-300 transition-all"></button>
+                    <button type="button" data-subcolor="#f59e0b" title="앰버 골드" class="w-5 h-5 rounded-full bg-amber-500 transition-all"></button>
+                    <button type="button" data-subcolor="#cbd5e1" title="연그레이" class="w-5 h-5 rounded-full bg-slate-300 transition-all"></button>
+                    <button type="button" data-subcolor="#38bdf8" title="스카이 블루" class="w-5 h-5 rounded-full bg-sky-400 transition-all"></button>
+                    <button type="button" data-subcolor="#34d399" title="민트 에메랄드" class="w-5 h-5 rounded-full bg-emerald-400 transition-all"></button>
+                    <button type="button" data-subcolor="#f472b6" title="라이트 핑크" class="w-5 h-5 rounded-full bg-pink-400 transition-all"></button>
+                    <button type="button" data-subcolor="#0f172a" title="다크 차콜" class="w-5 h-5 rounded-full bg-slate-900 border border-slate-600 transition-all"></button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Extra: Category badge / tag -->
+          <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> 상단 강조 뱃지 (Badge)
+              </span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="showBadge" checked class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <!-- 뱃지 설정 컨트롤 패널 -->
+            <div id="badgeControlPanel" class="space-y-3 pt-1">
+              <!-- 뱃지 문구 입력 -->
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">뱃지 문구</label>
+                <input type="text" id="badgeText" value="ISSUE BRIEFING" placeholder="예: 단독, 속보, 이슈 브리핑" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-semibold text-white focus:outline-none focus:border-indigo-500">
+              </div>
+
+              <!-- 상세 모드 전용: 뱃지 크기, 위치, 스타일, 모서리, 색상 -->
+              <div class="pro-only space-y-3 pt-1 border-t border-slate-800/80">
+                <!-- 뱃지 크기 슬라이더 -->
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                    <span>글자 크기 (Size)</span>
+                    <div class="num-input-wrap">
+                      <input id="badgeSizeInput" type="number" min="14" max="64" step="1" value="26" class="num-input-val">
+                      <span class="num-input-unit">px</span>
+                    </div>
+                  </div>
+                  <input id="badgeSize" type="range" min="16" max="48" step="1" value="26" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <!-- 뱃지 배치 위치 -->
+                <div>
+                  <label class="text-[11px] text-slate-400 block mb-1">배치 위치</label>
+                  <div class="grid grid-cols-3 gap-1.5" id="badgePositionGroup">
+                    <button type="button" data-pos="above-headline" class="badge-pos-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all text-center">
+                      제목 바로 위
+                    </button>
+                    <button type="button" data-pos="top-left" class="badge-pos-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      좌측 최상단
+                    </button>
+                    <button type="button" data-pos="top-right" class="badge-pos-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      우측 상단
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 뱃지 스타일 타입 -->
+                <div>
+                  <label class="text-[11px] text-slate-400 block mb-1">디자인 스타일</label>
+                  <div class="grid grid-cols-3 gap-1.5" id="badgeStyleGroup">
+                    <button type="button" data-style="solid" class="badge-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all text-center">
+                      솔리드 (채우기)
+                    </button>
+                    <button type="button" data-style="outline" class="badge-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      아웃라인 (외곽선)
+                    </button>
+                    <button type="button" data-style="glass" class="badge-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      글래스 (반투명)
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 모서리 모양 (Radius) -->
+                <div>
+                  <label class="text-[11px] text-slate-400 block mb-1">모서리 형태</label>
+                  <div class="grid grid-cols-3 gap-1.5" id="badgeRadiusGroup">
+                    <button type="button" data-radius="pill" class="badge-radius-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all text-center">
+                      캡슐 / 알약
+                    </button>
+                    <button type="button" data-radius="rounded" class="badge-radius-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      둥근 사각
+                    </button>
+                    <button type="button" data-radius="square" class="badge-radius-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                      직각
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 뱃지 색상 선택 -->
+                <div class="space-y-2 pt-1">
+                  <div class="flex items-center justify-between text-[11px] text-slate-300">
+                    <span>뱃지 색상</span>
+                    <div class="flex items-center gap-2">
+                      <span id="badgeColorHex" class="font-mono text-slate-400 text-[10px]">#EF4444</span>
+                      <input type="color" id="badgeColorPicker" value="#ef4444" class="w-6 h-6 rounded cursor-pointer border border-slate-700 bg-transparent">
+                    </div>
+                  </div>
+
+                  <!-- 빠른 컬러 프리셋 팔레트 -->
+                  <div class="flex items-center gap-1.5 pt-0.5" id="badgeColorPresets">
+                    <button type="button" data-color="#ef4444" title="레드 (속보/단독)" class="w-6 h-6 rounded-full bg-red-500 ring-2 ring-white ring-offset-2 ring-offset-slate-900 transition-transform active:scale-95"></button>
+                    <button type="button" data-color="#2563eb" title="블루 (뉴스/시사)" class="w-6 h-6 rounded-full bg-blue-600 transition-transform active:scale-95"></button>
+                    <button type="button" data-color="#6366f1" title="인디고 (인사이트/트렌드)" class="w-6 h-6 rounded-full bg-indigo-500 transition-transform active:scale-95"></button>
+                    <button type="button" data-color="#f59e0b" title="앰버 (특집/주목)" class="w-6 h-6 rounded-full bg-amber-500 transition-transform active:scale-95"></button>
+                    <button type="button" data-color="#10b981" title="에메랄드 (경제/ESG)" class="w-6 h-6 rounded-full bg-emerald-500 transition-transform active:scale-95"></button>
+                    <button type="button" data-color="#ec4899" title="핑크 (문화/라이프)" class="w-6 h-6 rounded-full bg-pink-500 transition-transform active:scale-95"></button>
+                    <button type="button" data-color="#0f172a" title="다크 차콜 (심플)" class="w-6 h-6 rounded-full bg-slate-900 border border-slate-600 transition-transform active:scale-95"></button>
+                    <button type="button" data-color="#ffffff" title="화이트 (모던)" class="w-6 h-6 rounded-full bg-white transition-transform active:scale-95"></button>
+                  </div>
+                </div>
+
+                <!-- 뱃지 글자색 선택 (화이트 vs 블랙) -->
+                <div class="flex items-center justify-between pt-1">
+                  <span class="text-[11px] text-slate-400">글자 색상</span>
+                  <div class="flex items-center gap-1.5" id="badgeTextColorGroup">
+                    <button type="button" data-textcolor="#ffffff" class="badge-textcolor-btn px-2.5 py-1 rounded text-[11px] font-semibold border border-indigo-500 bg-indigo-500/20 text-white">흰색</button>
+                    <button type="button" data-textcolor="#000000" class="badge-textcolor-btn px-2.5 py-1 rounded text-[11px] font-semibold border border-slate-800 bg-slate-900 text-slate-400 hover:text-white">검정</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+          </div> <!-- /#coverConfigPanel -->
+
+          <!-- ============================================== -->
+          <!-- 3-2. BODY CONFIG PANEL (본문 내용 템플릿) -->
+          <!-- ============================================== -->
+          <div id="bodyConfigPanel" class="space-y-4 hidden">
+            <!-- 상단 바 (카테고리 태그 & 페이지 인디케이터) -->
+            <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> 상단 헤더 & 페이지 번호
+                </span>
+                <input type="checkbox" id="showBodyTopBar" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+              </div>
+
+              <div class="grid grid-cols-3 gap-2">
+                <div class="col-span-2 space-y-1">
+                  <label class="text-[11px] text-slate-400">카테고리 / 코너명</label>
+                  <input type="text" id="bodyCategoryText" value="💡 핵심 요약 & 트렌드" placeholder="예: 💡 글로벌 경제 리포트" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[11px] text-slate-400">페이지 번호</label>
+                  <input type="text" id="bodyPageText" value="02 / 06" placeholder="02 / 06" class="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-mono text-center text-indigo-300 focus:outline-none focus:border-indigo-500">
+                </div>
+              </div>
+            </div>
+
+            <!-- 본문 카드 컨테이너 스타일 -->
+            <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-slate-200 block">본문 디자인 스타일 (3종)</label>
+                <span class="text-[10px] text-emerald-400 font-semibold" id="bodyStyleLabel">글래스 모피즘</span>
+              </div>
+              
+              <div class="grid grid-cols-3 gap-1.5" id="bodyCardStyleGroup">
+                <button type="button" data-style="glass" class="body-card-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all">
+                  <span class="text-base">🧊</span>
+                  <span>글래스 모피즘</span>
+                </button>
+                <button type="button" data-style="step" class="body-card-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all">
+                  <span class="text-base">📋</span>
+                  <span>3단 체크리스트</span>
+                </button>
+                <button type="button" data-style="split" class="body-card-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all">
+                  <span class="text-base">✨</span>
+                  <span>감성 분할 스토리</span>
+                </button>
+              </div>
+
+              <!-- 카드 배경 불투명도 슬라이더 (상세 모드 전용) -->
+              <div class="pro-only space-y-1.5 pt-1">
+                <div class="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>카드 배경 불투명도</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" id="bodyCardOpacityInput" min="20" max="95" step="5" value="85" class="no-spinner w-12 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-center text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500">
+                    <span class="text-[10px] text-slate-500">%</span>
+                  </div>
+                </div>
+                <input type="range" id="bodyCardOpacity" min="20" max="95" step="5" value="85" class="w-full accent-indigo-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+              </div>
+            </div>
+
+            <!-- 3단 체크리스트 세부 설정 (step 모드 시) -->
+            <div id="bodyStepOptions" class="hidden bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="text-sm">📋</span> 3단 체크리스트 항목 설정
+                </span>
+                <span class="text-[10px] text-emerald-400">포인트 요약 가이드</span>
+              </div>
+              
+              <!-- 상단 스텝 라벨 -->
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">상단 스텝 뱃지 문구</label>
+                <input type="text" id="bodyStepBadgeText" value="STEP 01" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500">
+              </div>
+
+              <!-- 포인트 1 -->
+              <div class="p-2.5 bg-slate-900/70 rounded-lg border border-slate-800/80 space-y-1.5">
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                  <span>✔ 포인트 01</span>
+                </div>
+                <input type="text" id="bodyItem1TitleText" value="01. 사용자 중심의 레이아웃 설계" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded text-xs font-semibold text-white focus:outline-none focus:border-indigo-500">
+                <textarea id="bodyItem1DescText" rows="2" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500 resize-none">시선의 흐름(F패턴)을 고려하여 3초 안에 핵심 메시지가 각인되도록 구성합니다.</textarea>
+              </div>
+
+              <!-- 포인트 2 -->
+              <div class="p-2.5 bg-slate-900/70 rounded-lg border border-slate-800/80 space-y-1.5">
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                  <span>✔ 포인트 02</span>
+                </div>
+                <input type="text" id="bodyItem2TitleText" value="02. 가독성을 높이는 폰트와 대비" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded text-xs font-semibold text-white focus:outline-none focus:border-indigo-500">
+                <textarea id="bodyItem2DescText" rows="2" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500 resize-none">배경 사진과 텍스트의 명도 대비를 70% 이상 확보하여 모바일에서도 선명하게 읽힙니다.</textarea>
+              </div>
+
+              <!-- 포인트 3 -->
+              <div class="p-2.5 bg-slate-900/70 rounded-lg border border-slate-800/80 space-y-1.5">
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                  <span>✔ 포인트 03</span>
+                </div>
+                <input type="text" id="bodyItem3TitleText" value="03. 명확한 다음 행동 유도(CTA)" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded text-xs font-semibold text-white focus:outline-none focus:border-indigo-500">
+                <textarea id="bodyItem3DescText" rows="2" class="w-full px-2.5 py-1 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500 resize-none">단순 정보 전달에 그치지 않고, 저장/공유/댓글 등의 명확한 트리거를 제시합니다.</textarea>
+              </div>
+            </div>
+
+            <!-- 섹션 소제목 (Section Title) -->
+            <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> 섹션 소제목 (Title)
+                </span>
+                <span class="text-[10px] text-slate-400">좌측 세로 강조바 연동</span>
+              </div>
+
+              <textarea id="bodyTitleText" rows="2" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm font-bold text-white focus:outline-none focus:border-indigo-500 resize-none">01. 변화를 주도하는
+새로운 기술 트렌드</textarea>
+
+              <!-- 상세 모드 전용: 소제목 글꼴, 강조 바 색상, 크기 -->
+              <div class="pro-only space-y-2.5 pt-1">
+                <div class="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label class="text-[11px] text-slate-400 block mb-1">소제목 글꼴</label>
+                    <select id="bodyTitleFontSelect" class="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                      <option value="'Pretendard', sans-serif">프리텐다드 [기본]</option>
+                      <option value="'GmarketSansBold', sans-serif">지마켓 산스</option>
+                      <option value="'Black Han Sans', sans-serif">검은고딕</option>
+                      <option value="'Noto Serif KR', serif">노토 명조</option>
+                      <option value="'Nanum Myeongjo', serif">나눔명조</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                      <span>강조 바 색상</span>
+                      <input type="color" id="bodyAccentPicker" value="#6366f1" class="w-4 h-4 rounded cursor-pointer border border-slate-700 bg-transparent">
+                    </div>
+                    <div class="flex items-center gap-1 pt-1" id="bodyAccentPresets">
+                      <button type="button" data-color="#6366f1" class="w-4 h-4 rounded-full bg-indigo-500 ring-2 ring-white ring-offset-2 ring-offset-slate-900"></button>
+                      <button type="button" data-color="#ef4444" class="w-4 h-4 rounded-full bg-red-500"></button>
+                      <button type="button" data-color="#3b82f6" class="w-4 h-4 rounded-full bg-blue-500"></button>
+                      <button type="button" data-color="#10b981" class="w-4 h-4 rounded-full bg-emerald-500"></button>
+                      <button type="button" data-color="#f59e0b" class="w-4 h-4 rounded-full bg-amber-500"></button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 소제목 크기 -->
+                <div class="space-y-1.5 pt-1">
+                  <div class="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>소제목 크기</span>
+                    <div class="flex items-center gap-1">
+                      <input type="number" id="bodyTitleSizeInput" min="26" max="56" step="1" value="38" class="no-spinner w-12 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-center text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500">
+                      <span class="text-[10px] text-slate-500">px</span>
+                    </div>
+                  </div>
+                  <input type="range" id="bodyTitleSize" min="26" max="56" step="1" value="38" class="w-full accent-indigo-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                </div>
+              </div>
+            </div>
+
+            <!-- 본문 설명문 (Body Paragraph) -->
+            <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> 본문 설명문 (Body Paragraph)
+                </span>
+                <span class="text-[10px] text-slate-400">자동 줄바꿈 지원</span>
+              </div>
+
+              <textarea id="bodyDescText" rows="4" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs leading-relaxed text-slate-200 focus:outline-none focus:border-indigo-500 resize-none">사용자 경험과 자동화의 결합으로 기존 작업 방식이 근본적으로 재편되고 있습니다.
+
+단순 반복 업무는 AI 에이전트가 처리하고, 사람은 전략과 창의적 기획에 집중하는 새로운 협업 패러다임이 확산되는 중입니다.</textarea>
+
+              <!-- 상세 모드 전용: 본문 크기, 줄간격, 본문 글자 색상 -->
+              <div class="pro-only space-y-3 pt-1">
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>본문 크기</span>
+                      <div class="flex items-center gap-1">
+                        <input type="number" id="bodyDescSizeInput" min="16" max="32" step="1" value="23" class="no-spinner w-12 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-center text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500">
+                        <span class="text-[10px] text-slate-500">px</span>
+                      </div>
+                    </div>
+                    <input type="range" id="bodyDescSize" min="16" max="32" step="1" value="23" class="w-full accent-indigo-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>줄간격</span>
+                      <div class="flex items-center gap-1">
+                        <input type="number" id="bodyLineHeightInput" min="1.3" max="2.2" step="0.05" value="1.65" class="no-spinner w-12 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-center text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500">
+                        <span class="text-[10px] text-slate-500">배</span>
+                      </div>
+                    </div>
+                    <input type="range" id="bodyLineHeight" min="1.3" max="2.2" step="0.05" value="1.65" class="w-full accent-indigo-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                  </div>
+                </div>
+
+                <!-- 본문 글자 색상 -->
+                <div class="space-y-1.5 pt-1">
+                  <div class="flex items-center justify-between text-[11px] text-slate-300">
+                    <span>본문 글자 색상</span>
+                    <div class="flex items-center gap-2">
+                      <span id="bodyDescColorHex" class="font-mono text-slate-400 text-[10px]">#E2E8F0</span>
+                      <input type="color" id="bodyDescColorPicker" value="#e2e8f0" class="w-5 h-5 rounded cursor-pointer border border-slate-700 bg-transparent">
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5" id="bodyDescColorPresets">
+                    <button type="button" data-color="#e2e8f0" title="밝은 슬레이트" class="w-5 h-5 rounded-full bg-slate-200 ring-2 ring-white ring-offset-2 ring-offset-slate-900"></button>
+                    <button type="button" data-color="#ffffff" title="순백색" class="w-5 h-5 rounded-full bg-white"></button>
+                    <button type="button" data-color="#cbd5e1" title="실버" class="w-5 h-5 rounded-full bg-slate-300"></button>
+                    <button type="button" data-color="#fef08a" title="소프트 옐로우" class="w-5 h-5 rounded-full bg-yellow-200"></button>
+                    <button type="button" data-color="#93c5fd" title="소프트 블루" class="w-5 h-5 rounded-full bg-blue-300"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 하단 강조/인용구 박스 (Callout Quote, 상세 모드 전용) -->
+            <div class="pro-only bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> 하단 인용 / 핵심 요약 박스
+                </span>
+                <input type="checkbox" id="showBodyQuote" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">인용구 / 강조 핵심 문장</label>
+                <textarea id="bodyQuoteText" rows="2" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-amber-200 focus:outline-none focus:border-indigo-500 resize-none">"결국 중요한 것은 기술 자체가 아니라, 이를 통해 어떤 실질적 가치를 창출하는가이다."</textarea>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">출처 또는 발췌자 표기</label>
+                <input type="text" id="bodyQuoteAuthor" value="— 2026 글로벌 테크 인더스트리 리포트" placeholder="— 출처 표기" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================================== -->
+          <!-- 3-3. ENDING CONFIG PANEL (마무리 엔딩 템플릿) -->
+          <!-- ============================================== -->
+          <div id="endingConfigPanel" class="space-y-4 hidden">
+
+            <!-- 엔딩 디자인 스타일 3종 선택 -->
+            <div class="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> 엔딩 디자인 스타일 (3종)
+                </span>
+                <span class="text-[10px] text-rose-400 font-semibold" id="endStyleLabel">소셜 액션형</span>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5" id="endingStylePresetGroup">
+                <button type="button" data-end-style="social-action" class="end-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all">
+                  <span class="text-base">❤️</span>
+                  <span>소셜 액션형</span>
+                </button>
+                <button type="button" data-end-style="save-reminder" class="end-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all">
+                  <span class="text-base">📌</span>
+                  <span>저장 유도형</span>
+                </button>
+                <button type="button" data-end-style="series-next" class="end-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all">
+                  <span class="text-base">⏭️</span>
+                  <span>다음 편 예고</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 저장 유도형 전용 세부 설정 -->
+            <div id="endSaveOptions" class="hidden bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <span class="text-sm">📌</span> 저장 유도 전용 문구
+                </span>
+                <span class="text-[10px] text-amber-400">계정 성장 북마크</span>
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">상단 후킹 서브 문구</label>
+                <input type="text" id="endSaveHookText" value="놓치면 후회할 꿀팁, 지금 저장해두셨나요?" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">북마크 카드 헤드라인</label>
+                <input type="text" id="endSaveCardTitleText" value="나중에 다시 보려면 꼭 [저장 📌]" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-amber-300 font-bold focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">북마크 카드 안내 문구</label>
+                <input type="text" id="endSaveCardDescText" value="필요할 때 헤매지 않고 내 보관함에서 바로 꺼내보세요!" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">하단 프로필 링크 유도</label>
+                <input type="text" id="endSaveSubCtaText" value="프로필 링크에서 실전 템플릿 무료 다운로드 ➔" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-indigo-300 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+
+            <!-- 다음 편 예고형 전용 세부 설정 -->
+            <div id="endSeriesOptions" class="hidden bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <span class="text-sm">⏭️</span> 다음 편 예고 전용 설정
+                </span>
+                <span class="text-[10px] text-sky-400">정기 연재 티저</span>
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">상단 티저 뱃지</label>
+                <input type="text" id="endNextBadgeText" value="NEXT ISSUE PREVIEW · 다음 편 예고" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">다음 편 주제 및 타이틀</label>
+                <input type="text" id="endNextTitleText" value="VOL. 02 ➔ AI 에이전트로 10배 빠른 콘텐츠 기획하기" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-sky-300 font-bold focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">발행 일정 안내</label>
+                <input type="text" id="endNextDateText" value="📅 다음 주 목요일 저녁 7시 정식 발행" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">독자 의견 / 댓글 소통 안내</label>
+                <input type="text" id="endNextNoticeText" value="궁금한 질문이나 다뤄줬으면 하는 주제는 [댓글]로 남겨주세요!" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-amber-200 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+
+            <!-- 상단 태그 -->
+            <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-indigo-400"></span> 상단 마무리 태그 (Ending Badge)
+                </span>
+                <input type="checkbox" id="showEndTag" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+              </div>
+              <input type="text" id="endTagText" value="EPILOGUE · 맺음말" placeholder="예: EPILOGUE · 맺음말" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <!-- 질문형 메인 후킹 타이틀 -->
+            <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> 엔딩 메인 메시지 / 질문
+                </span>
+                <span class="text-[10px] text-slate-400">댓글 유도형 카피</span>
+              </div>
+
+              <textarea id="endTitleText" rows="2" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm font-bold text-white focus:outline-none focus:border-indigo-500 resize-none">여러분의 생각은
+어떠신가요?</textarea>
+
+              <!-- 상세 모드 전용: 엔딩 메인 메시지 서체, 크기, 색상 -->
+              <div class="pro-only space-y-2 pt-1 border-t border-slate-800/80">
+                <div>
+                  <label class="text-[11px] text-slate-400 block mb-1">메인 메시지 서체</label>
+                <select id="endTitleFontSelect" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                  <option value="'Pretendard', sans-serif">프리텐다드 [기본]</option>
+                  <option value="'GmarketSansBold', sans-serif">지마켓 산스</option>
+                  <option value="'Black Han Sans', sans-serif">검은고딕</option>
+                  <option value="'Noto Serif KR', serif">노토 명조</option>
+                  <option value="'Nanum Myeongjo', serif">나눔명조</option>
+                </select>
+              </div>
+
+              <!-- 글자 크기 -->
+              <div class="space-y-1.5 pt-1">
+                <div class="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>글자 크기</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" id="endTitleSizeInput" min="32" max="72" step="2" value="50" class="no-spinner w-12 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-center text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500">
+                    <span class="text-[10px] text-slate-500">px</span>
+                  </div>
+                </div>
+                <input type="range" id="endTitleSize" min="32" max="72" step="2" value="50" class="w-full accent-indigo-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+              </div>
+
+              <!-- 글자 색상 -->
+              <div class="space-y-1.5 pt-1">
+                <div class="flex items-center justify-between text-[11px] text-slate-300">
+                  <span>글자 색상</span>
+                  <div class="flex items-center gap-2">
+                    <span id="endTitleColorHex" class="font-mono text-slate-400 text-[10px]">#FFFFFF</span>
+                    <input type="color" id="endTitleColorPicker" value="#ffffff" class="w-5 h-5 cursor-pointer rounded border border-slate-700 bg-transparent">
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5" id="endTitleColorPresets">
+                  <button type="button" data-color="#ffffff" title="화이트" class="w-5 h-5 rounded-full bg-white ring-2 ring-white ring-offset-2 ring-offset-slate-900"></button>
+                  <button type="button" data-color="#fef08a" title="옐로우" class="w-5 h-5 rounded-full bg-yellow-200"></button>
+                  <button type="button" data-color="#60a5fa" title="블루" class="w-5 h-5 rounded-full bg-blue-400"></button>
+                  <button type="button" data-color="#4ade80" title="그린" class="w-5 h-5 rounded-full bg-green-400"></button>
+                </div>
+              </div>
+              </div> <!-- /.pro-only -->
+            </div>
+
+            <!-- 요약 카피 & 당부 메시지 -->
+            <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
+              <label class="text-xs font-bold text-slate-200 block">요약 및 참여 안내 문구</label>
+              
+              <textarea id="endDescText" rows="3" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs leading-relaxed text-slate-200 focus:outline-none focus:border-indigo-500 resize-none">인사이트가 유익하셨다면 지금 저장해두고,
+동료나 지인들에게 공유해보세요!
+댓글로 다양한 의견을 남겨주시면 큰 힘이 됩니다.</textarea>
+
+              <div class="pro-only space-y-1.5 pt-1">
+                <div class="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>설명글 크기</span>
+                  <div class="flex items-center gap-1">
+                    <input type="number" id="endDescSizeInput" min="16" max="32" step="1" value="23" class="no-spinner w-12 px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-center text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500">
+                    <span class="text-[10px] text-slate-500">px</span>
+                  </div>
+                </div>
+                <input type="range" id="endDescSize" min="16" max="32" step="1" value="23" class="w-full accent-indigo-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+              </div>
+            </div>
+
+            <!-- 참여 인터랙션 바 & CTA 버튼 -->
+            <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3.5">
+              <label class="text-xs font-bold text-slate-200 block">하단 행동 유도 (Call-to-Action) 요소</label>
+
+              <!-- 액션 스타일 선택 (상세 모드 전용) -->
+              <div class="pro-only">
+                <label class="text-[11px] text-slate-400 block mb-1">인터랙션 구성</label>
+                <div class="grid grid-cols-3 gap-1.5" id="endActionStyleGroup">
+                  <button type="button" data-style="insta" class="end-action-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-indigo-500 bg-indigo-500/10 text-indigo-300 transition-all">
+                    <span class="text-sm">❤️💬</span>
+                    <span>인스타 4종 바</span>
+                  </button>
+                  <button type="button" data-style="cta" class="end-action-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all">
+                    <span class="text-sm">🔘</span>
+                    <span>와이드 CTA 버튼</span>
+                  </button>
+                  <button type="button" data-style="both" class="end-action-style-btn px-2 py-2 rounded-lg border text-[11px] font-semibold flex flex-col items-center gap-1 border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all">
+                    <span class="text-sm">✨</span>
+                    <span>둘 다 표시</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- CTA 버튼 문구 -->
+              <div class="space-y-1">
+                <label class="text-[11px] text-slate-400">CTA 버튼 문구</label>
+                <input type="text" id="endCtaText" value="지금 저장하고 프로필 링크 확인하기 ➔" placeholder="예: 지금 저장하고 다음 편 받아보기 ➔" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-semibold text-white focus:outline-none focus:border-indigo-500">
+              </div>
+
+              <!-- CTA 버튼 색상 (상세 모드 전용) -->
+              <div class="pro-only space-y-1.5 pt-1">
+                <div class="flex items-center justify-between text-[11px] text-slate-300">
+                  <span>CTA 버튼 배경색</span>
+                  <div class="flex items-center gap-2">
+                    <span id="endCtaColorHex" class="font-mono text-slate-400 text-[10px]">#6366F1</span>
+                    <input type="color" id="endCtaColorPicker" value="#6366f1" class="w-5 h-5 rounded cursor-pointer border border-slate-700 bg-transparent">
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5" id="endCtaColorPresets">
+                  <button type="button" data-color="#6366f1" title="인디고" class="w-5 h-5 rounded-full bg-indigo-500 ring-2 ring-white ring-offset-2 ring-offset-slate-900"></button>
+                  <button type="button" data-color="#ef4444" title="레드" class="w-5 h-5 rounded-full bg-red-500"></button>
+                  <button type="button" data-color="#2563eb" title="블루" class="w-5 h-5 rounded-full bg-blue-600"></button>
+                  <button type="button" data-color="#10b981" title="에메랄드" class="w-5 h-5 rounded-full bg-emerald-500"></button>
+                  <button type="button" data-color="#f59e0b" title="앰버" class="w-5 h-5 rounded-full bg-amber-500"></button>
+                  <button type="button" data-color="#ffffff" title="화이트" class="w-5 h-5 rounded-full bg-white"></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 하단 공식 계정 / 푸터 (상세 모드 전용) -->
+            <div class="pro-only bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> 하단 계정 핸들 및 푸터 라인
+                </span>
+                <input type="checkbox" id="showEndFooter" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+              </div>
+              <input type="text" id="endHandleText" value="@cardnews_studio | 매주 목요일 새로운 인사이트" placeholder="예: @brand_official | 매주 발행" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Gradient & Legibility Overlay (상세 모드 전용) -->
+        <section class="pro-only space-y-3.5 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block">4. 텍스트 가독성 그림자 (그라데이션)</label>
+            <span class="text-[10px] text-slate-500">배경-글자 분리 효과</span>
+          </div>
+
+          <!-- 그림자 색상 선택 -->
+          <div class="space-y-1.5 pb-1">
+            <div class="flex items-center justify-between text-[11px] text-slate-300">
+              <span>그림자 틴트 색상</span>
+              <div class="flex items-center gap-2">
+                <span id="gradColorHex" class="font-mono text-slate-400 text-[10px]">#000000</span>
+                <input type="color" id="gradColorPicker" value="#000000" class="w-5 h-5 rounded cursor-pointer border border-slate-700 bg-transparent">
+              </div>
+            </div>
+            
+            <!-- 원클릭 그림자 색상 프리셋 -->
+            <div class="flex items-center gap-1.5 pt-0.5" id="gradColorPresets">
+              <button type="button" data-gradcolor="#000000" title="딥 블랙 (정통 암부)" class="w-6 h-6 rounded-full bg-black border border-slate-700 ring-2 ring-indigo-500 ring-offset-1 ring-offset-slate-900 transition-all"></button>
+              <button type="button" data-gradcolor="#ffffff" title="화이트 안개 (밝은 감성 & 다크 텍스트)" class="w-6 h-6 rounded-full bg-white transition-all"></button>
+              <button type="button" data-gradcolor="#0f172a" title="미드나잇 네이비 (신뢰 딥블루)" class="w-6 h-6 rounded-full bg-slate-900 border border-slate-700 transition-all"></button>
+              <button type="button" data-gradcolor="#450a0a" title="딥 버건디 (강렬한 속보)" class="w-6 h-6 rounded-full bg-red-950 border border-red-900 transition-all"></button>
+              <button type="button" data-gradcolor="#064e3b" title="딥 에메랄드 (신뢰 그린)" class="w-6 h-6 rounded-full bg-emerald-950 border border-emerald-900 transition-all"></button>
+              <button type="button" data-gradcolor="#3b0764" title="딥 퍼플 (트렌드/매거진)" class="w-6 h-6 rounded-full bg-purple-950 border border-purple-900 transition-all"></button>
+            </div>
+          </div>
+
+          <!-- 강도 및 영역 범위 슬라이더 -->
+          <div class="space-y-3 pt-2 border-t border-slate-800/80">
+            <div>
+              <div class="flex justify-between items-center text-xs text-slate-300 mb-1">
+                <span>그림자 투명도 / 강도</span>
+                <div class="num-input-wrap">
+                  <input id="gradIntensityInput" type="number" min="0" max="100" step="1" value="85" class="num-input-val">
+                  <span class="num-input-unit">%</span>
+                </div>
+              </div>
+              <input id="gradIntensity" type="range" min="0" max="100" step="5" value="85" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+            </div>
+            <div>
+              <div class="flex justify-between items-center text-xs text-slate-300 mb-1">
+                <span>그림자 세로 영역 범위 (높이)</span>
+                <div class="num-input-wrap">
+                  <input id="gradHeightInput" type="number" min="10" max="95" step="1" value="42" class="num-input-val">
+                  <span class="num-input-unit">%</span>
+                </div>
+              </div>
+              <input id="gradHeight" type="range" min="15" max="85" step="1" value="42" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+            </div>
+          </div>
+        </section>
+
+        <!-- 간편 모드 전용: 상세 모드 전환 유도 카드 -->
+        <div class="simple-only p-4 bg-gradient-to-r from-indigo-950/40 via-slate-900 to-indigo-900/20 rounded-xl border border-indigo-500/30 text-center space-y-2.5 shadow-md">
+          <div class="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-300">
+            <span>✨</span> <span>전문가용 세부 설정이 필요하신가요?</span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            폰트 종류, 픽셀 단위 위치 이동(Y), 줄간격, 그림자 효과 등 모든 세부 옵션을 직접 제어할 수 있습니다.
+          </p>
+          <button type="button" id="switchToProBtn" class="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5">
+            <span>🛠️</span> <span>상세 조정 모드로 전환</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Floating Mobile Preview Button (Visible on mobile while editing) -->
+      <button type="button" id="floatingPreviewBtn" class="md:hidden fixed bottom-5 right-5 z-40 px-4 py-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-indigo-400/40 transform active:scale-95 transition-all">
+        <span class="text-sm">👁️</span> <span>미리보기</span>
+      </button>
+    </aside>
+
+    <!-- Right Canvas Workspace: Exact 100% matched height with sidebar -->
+    <section id="previewWorkspace" class="hidden md:flex flex-1 h-full bg-slate-950 checkerboard-bg relative flex-col items-center justify-between p-2.5 sm:p-3.5 lg:p-4 overflow-hidden">
+      
+      <!-- Top Info & Quick Reset Bar (In-flow flex layout) -->
+      <div class="w-full flex items-center justify-between z-20 mb-1.5 px-1 max-w-[900px] flex-shrink-0">
+        <div class="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-lg border border-slate-800 text-xs text-slate-300 shadow-md">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="resolutionBadge" class="font-mono text-slate-200">1080 × 1350 px</span>
+          <span class="text-slate-500 hidden sm:inline">|</span>
+          <span class="text-slate-400 hidden sm:inline">드래그로 이미지 이동</span>
+        </div>
+
+        <button id="resetPanBtn" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+          <span>위치 초기화</span>
+        </button>
+      </div>
+
+      <!-- Canvas Center Viewport (Flex-1 auto fit: canvas strictly contained inside available space) -->
+      <div id="canvasViewport" class="flex-1 min-h-0 min-w-0 w-full flex items-center justify-center relative overflow-hidden my-auto p-1.5 sm:p-2.5">
+        <div id="canvasContainer" class="relative flex items-center justify-center transition-all select-none shadow-2xl rounded-sm ring-1 ring-slate-800">
+          <canvas id="mainCanvas" class="block cursor-grab active:cursor-grabbing select-none"></canvas>
+        </div>
+      </div>
+
+      <!-- Multi-Slide Controller & Carousel Bar (Firmly anchored at bottom) -->
+      <div id="slideManagementBar" class="mt-1.5 z-20 flex flex-wrap items-center justify-between gap-2 bg-slate-900/95 backdrop-blur-xl px-3 sm:px-4 py-2 rounded-2xl border border-slate-700/80 text-xs shadow-2xl w-full max-w-[900px] flex-shrink-0">
+        
+        <!-- Left: Navigation (Prev / Counter / Next) -->
+        <div class="flex items-center gap-1.5">
+          <button id="prevSlideBtn" type="button" title="이전 페이지 (Alt + ←)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+            <span>◀</span> <span class="hidden sm:inline">이전</span>
+          </button>
+
+          <div class="flex items-center gap-1.5 px-3 py-1 bg-slate-950/80 rounded-lg border border-slate-800 font-mono shadow-inner">
+            <span id="currentSlideNum" class="text-indigo-400 font-extrabold text-sm">1</span>
+            <span class="text-slate-600">/</span>
+            <span id="totalSlideNum" class="text-slate-400 font-bold text-sm">3</span>
+            <span id="currentSlideBadge" class="ml-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">표지</span>
+          </div>
+
+          <button id="nextSlideBtn" type="button" title="다음 페이지 (Alt + →)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+            <span class="hidden sm:inline">다음</span> <span>▶</span>
+          </button>
+        </div>
+
+        <!-- Center: Slide Quick Navigation Chips -->
+        <div id="slideChipsContainer" class="flex items-center gap-1.5 overflow-x-auto max-w-[280px] sm:max-w-[360px] md:max-w-[440px] py-1 px-1 custom-scrollbar">
+          <!-- Dynamically rendered slide chips -->
+        </div>
+
+        <!-- Right: Action Controls (Add / Duplicate / Move / Renumber / Delete) -->
+        <div class="flex items-center gap-1.5 ml-auto sm:ml-0">
+          <!-- Add Slide Button & Menu -->
+          <div class="relative">
+            <button type="button" id="addSlideBtn" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1 shadow-md shadow-emerald-900/30 transition-all active:scale-95">
+              <span>➕</span> <span>페이지 추가</span>
+            </button>
+            <!-- Add Slide Menu Dropdown -->
+            <div id="addSlideMenu" class="hidden absolute bottom-full mb-2 right-0 w-44 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
+              <button type="button" data-add-template="body" class="w-full text-left px-3 py-2 hover:bg-emerald-600/20 text-emerald-300 font-semibold flex items-center gap-2 transition-colors">
+                <span>📄</span> <span>본문 페이지 추가</span>
+              </button>
+              <button type="button" data-add-template="cover" class="w-full text-left px-3 py-2 hover:bg-indigo-600/20 text-indigo-300 font-semibold flex items-center gap-2 transition-colors">
+                <span>🏷️</span> <span>표지 페이지 추가</span>
+              </button>
+              <button type="button" data-add-template="ending" class="w-full text-left px-3 py-2 hover:bg-rose-600/20 text-rose-300 font-semibold flex items-center gap-2 transition-colors">
+                <span>🏁</span> <span>마무리 페이지 추가</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Duplicate Slide -->
+          <button type="button" id="dupSlideBtn" title="현재 페이지를 그대로 복제합니다" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 font-medium transition-colors">
+            <span>📋</span> <span class="hidden md:inline">복제</span>
+          </button>
+
+          <!-- Move Left / Right -->
+          <button type="button" id="movePrevSlideBtn" title="현재 페이지를 앞으로 이동" class="p-1.5 sm:px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center transition-colors">
+            <span>←</span>
+          </button>
+          <button type="button" id="moveNextSlideBtn" title="현재 페이지를 뒤로 이동" class="p-1.5 sm:px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center transition-colors">
+            <span>→</span>
+          </button>
+
+          <!-- Auto Renumber Pages -->
+          <button type="button" id="autoRenumberBtn" title="본문 페이지 번호(02/05 등)를 순서에 맞게 일괄 자동 갱신" class="p-1.5 sm:px-2 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-700/60 flex items-center gap-1 font-medium transition-colors">
+            <span>🔢</span> <span class="hidden lg:inline">번호 동기화</span>
+          </button>
+
+          <!-- Delete Slide -->
+          <button type="button" id="deleteSlideBtn" title="현재 페이지 삭제" class="p-1.5 sm:px-2 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-rose-400 hover:text-rose-300 border border-slate-700 hover:border-rose-800 flex items-center gap-1 font-medium transition-colors">
+            <span>🗑️</span> <span class="hidden md:inline">삭제</span>
+          </button>
+
+          <!-- Quick Deck Save & Load Buttons -->
+          <div class="h-4 w-px bg-slate-700 mx-0.5 hidden sm:block"></div>
+          <button type="button" id="slideBarDeckSaveBtn" title="현재 전체 페이지(N장) 구성을 템플릿으로 저장" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/70 flex items-center gap-1 font-semibold transition-all">
+            <span>💾</span> <span class="hidden md:inline">덱 저장</span>
+          </button>
+          <button type="button" id="slideBarDeckLoadBtn" title="저장된 전체 덱 구성(3장/5장 등) 불러오기" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-semibold transition-all">
+            <span>📚</span> <span class="hidden md:inline">덱 불러오기</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Toast Notification Notification Box -->
+      <div id="toastBox" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 border border-indigo-500 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 z-50">
+        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toastMsg" class="text-sm font-medium">알림 메시지</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    // State Management
+    const state = {
+      workMode: 'simple', // 'simple' (간편 제작 모드) or 'pro' (상세 조정 모드)
+      width: 1080,
+      height: 1350,
+      ratio: '4:5',
+      image: null,
+      zoom: 1.0,
+      panX: 0,
+      panY: 0,
+      brightness: 100,
+      contrast: 100,
+      saturate: 100,
+      blur: 0,
+      vignette: 0,
+      tintColor: '#0f172a',
+      tintOpacity: 0,
+      flipH: false,
+      flipV: false,
+      filterPreset: 'normal',
+      credit: '배경 이미지: 서울경제 권욱 기자',
+      showCredit: true,
+      creditPos: 'top-left',
+      creditStyle: 'minimal',
+      creditSize: 20,
+      creditOpacity: 85,
+      headline: '2026년 9월 4주차\n일간 이슈 정리',
+      headlineFont: "'Pretendard', sans-serif",
+      headlineAlign: 'left', // left, center, right
+      headlineVPos: 'bottom', // bottom, middle, top
+      headlineOffsetY: 0,
+      headlineColor: '#ffffff',
+      headlineStyle: 'soft-shadow', // soft-shadow, deep-shadow, stroke, box
+      headlineSize: 68,
+      headlineLineHeight: 1.18,
+      subtitle: '북중미 정상회담부터 조희대 재제청 논란까지',
+      showSubtitle: true,
+      subFont: 'inherit',
+      subPosition: 'bottom-opposite', // below-headline, bottom-opposite, above-headline
+      subTextColor: '#ffffff',
+      subSize: 32,
+      badge: 'ISSUE BRIEFING',
+      showBadge: true,
+      badgeSize: 26,
+      badgeBgColor: '#ef4444',
+      badgeTextColor: '#ffffff',
+      badgeStyle: 'solid',
+      badgeRadius: 'pill',
+      badgePosition: 'above-headline',
+      gradColor: '#000000',
+      gradIntensity: 0.85,
+      gradHeight: 0.42,
+      isDragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+
+      // === 템플릿 모드 및 본문/마무리 상태 ===
+      templateMode: 'cover', // 'cover', 'body', 'ending'
+
+      // 1. 표지(Cover) 3종 디자인 스타일 상태
+      coverDesignPreset: 'editorial', // 'editorial', 'magazine-frame', 'sticker-bold'
+      coverIssueTag: '✦ VOL. 09 · MONTHLY ISSUE · 2026.09 ✦',
+      coverCurator: 'CURATED BY @CARDNEWS_STUDIO',
+      coverFrameColor: '#ffffff',
+      coverStickerNumber: 'TIP 01',
+      coverStickerCategory: 'TREND & TECH',
+      coverStickerSub: '3분 완성 실전 꿀팁 ➔',
+      coverStickerColor: '#facc15',
+
+      // 2. 본문(Body) 3종 디자인 스타일 상태
+      showBodyTopBar: true,
+      bodyCategory: '💡 핵심 요약 & 트렌드',
+      bodyPage: '02 / 06',
+      bodyCardStyle: 'glass', // 'glass', 'step', 'split'
+      bodyCardOpacity: 0.85,
+      bodyTitle: '01. 변화를 주도하는\n새로운 기술 트렌드',
+      bodyTitleFont: "'Pretendard', sans-serif",
+      bodyAccentColor: '#6366f1',
+      bodyTitleSize: 38,
+      bodyDesc: '사용자 경험과 자동화의 결합으로 기존 작업 방식이 근본적으로 재편되고 있습니다.\n\n단순 반복 업무는 AI 에이전트가 처리하고, 사람은 전략과 창의적 기획에 집중하는 새로운 협업 패러다임이 확산되는 중입니다.',
+      bodyDescSize: 23,
+      bodyLineHeight: 1.65,
+      bodyDescColor: '#e2e8f0',
+      showBodyQuote: true,
+      bodyQuote: '"결국 중요한 것은 기술 자체가 아니라, 이를 통해 어떤 실질적 가치를 창출하는가이다."',
+      bodyQuoteAuthor: '— 2026 글로벌 테크 인더스트리 리포트',
+      // 3단 체크리스트 항목들
+      bodyStepBadge: 'STEP 01',
+      bodyItem1Title: '01. 사용자 중심의 레이아웃 설계',
+      bodyItem1Desc: '시선의 흐름(F패턴)을 고려하여 3초 안에 핵심 메시지가 각인되도록 구성합니다.',
+      bodyItem2Title: '02. 가독성을 높이는 폰트와 대비',
+      bodyItem2Desc: '배경 사진과 텍스트의 명도 대비를 70% 이상 확보하여 모바일에서도 선명하게 읽힙니다.',
+      bodyItem3Title: '03. 명확한 다음 행동 유도(CTA)',
+      bodyItem3Desc: '단순 정보 전달에 그치지 않고, 저장/공유/댓글 등의 명확한 트리거를 제시합니다.',
+
+      // 3. 마무리(Ending) 3종 디자인 스타일 상태
+      endingDesignPreset: 'social-action', // 'social-action', 'save-reminder', 'series-next'
+      showEndTag: true,
+      endTag: 'EPILOGUE · 맺음말',
+      endTitle: '여러분의 생각은\n어떠신가요?',
+      endTitleFont: "'Pretendard', sans-serif",
+      endTitleSize: 50,
+      endTitleColor: '#ffffff',
+      endDesc: '인사이트가 유익하셨다면 지금 저장해두고,\n동료나 지인들에게 공유해보세요!\n댓글로 다양한 의견을 남겨주시면 큰 힘이 됩니다.',
+      endDescSize: 23,
+      endActionStyle: 'insta', // 'insta', 'cta', 'both'
+      endCtaText: '지금 저장하고 프로필 링크 확인하기 ➔',
+      endCtaColor: '#6366f1',
+      showEndFooter: true,
+      endHandle: '@cardnews_studio | 매주 목요일 새로운 인사이트',
+      // 저장 유도형 상태
+      endSaveHook: '놓치면 후회할 꿀팁, 지금 저장해두셨나요?',
+      endSaveCardTitle: '나중에 다시 보려면 꼭 [저장 📌]',
+      endSaveCardDesc: '필요할 때 헤매지 않고 내 보관함에서 바로 꺼내보세요!',
+      endSaveSubCta: '프로필 링크에서 실전 템플릿 무료 다운로드 ➔',
+      // 다음 편 예고형 상태
+      endNextBadge: 'NEXT ISSUE PREVIEW · 다음 편 예고',
+      endNextTitle: 'VOL. 02 ➔ AI 에이전트로 10배 빠른 콘텐츠 기획하기',
+      endNextDate: '📅 다음 주 목요일 저녁 7시 정식 발행',
+      endNextNotice: '궁금한 질문이나 다뤄줬으면 하는 주제는 [댓글]로 남겨주세요!'
+    };
+
+    // DOM Elements
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const imageInput = document.getElementById('imageInput');
+    const dropZone = document.getElementById('dropZone');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetPresetBtn = document.getElementById('resetPresetBtn');
+    const resetPanBtn = document.getElementById('resetPanBtn');
+    const resolutionBadge = document.getElementById('resolutionBadge');
+    const toastBox = document.getElementById('toastBox');
+    const toastMsg = document.getElementById('toastMsg');
+    const currentTemplateBadge = document.getElementById('currentTemplateBadge');
+    const panelModeBadge = document.getElementById('panelModeBadge');
+    const coverConfigPanel = document.getElementById('coverConfigPanel');
+    const bodyConfigPanel = document.getElementById('bodyConfigPanel');
+    const endingConfigPanel = document.getElementById('endingConfigPanel');
+
+    // UI Input Bindings
+    const inputs = {
+      zoomSlider: document.getElementById('zoomSlider'),
+      zoomInput: document.getElementById('zoomInput'),
+      panXSlider: document.getElementById('panXSlider'),
+      panXInput: document.getElementById('panXInput'),
+      panYSlider: document.getElementById('panYSlider'),
+      panYInput: document.getElementById('panYInput'),
+      brightSlider: document.getElementById('brightSlider'),
+      brightInput: document.getElementById('brightInput'),
+      contrastSlider: document.getElementById('contrastSlider'),
+      contrastInput: document.getElementById('contrastInput'),
+      saturateSlider: document.getElementById('saturateSlider'),
+      saturateInput: document.getElementById('saturateInput'),
+      blurSlider: document.getElementById('blurSlider'),
+      blurInput: document.getElementById('blurInput'),
+      vignetteSlider: document.getElementById('vignetteSlider'),
+      vignetteInput: document.getElementById('vignetteInput'),
+      tintColorPicker: document.getElementById('tintColorPicker'),
+      tintOpacitySlider: document.getElementById('tintOpacitySlider'),
+      tintOpacityInput: document.getElementById('tintOpacityInput'),
+      flipHBtn: document.getElementById('flipHBtn'),
+      flipVBtn: document.getElementById('flipVBtn'),
+      resetPhotoFiltersBtn: document.getElementById('resetPhotoFiltersBtn'),
+      creditText: document.getElementById('creditText'),
+      showCredit: document.getElementById('showCredit'),
+      creditSizeSlider: document.getElementById('creditSizeSlider'),
+      creditSizeInput: document.getElementById('creditSizeInput'),
+      creditOpacitySlider: document.getElementById('creditOpacitySlider'),
+      creditOpacityInput: document.getElementById('creditOpacityInput'),
+      headlineText: document.getElementById('headlineText'),
+      headlineFontSelect: document.getElementById('headlineFontSelect'),
+      headlineOffsetY: document.getElementById('headlineOffsetY'),
+      headlineOffsetYInput: document.getElementById('headlineOffsetYInput'),
+      headlineSize: document.getElementById('headlineSize'),
+      headlineSizeInput: document.getElementById('headlineSizeInput'),
+      headlineLineHeight: document.getElementById('headlineLineHeight'),
+      headlineLineHeightInput: document.getElementById('headlineLineHeightInput'),
+      headlineColorPicker: document.getElementById('headlineColorPicker'),
+      headlineColorHex: document.getElementById('headlineColorHex'),
+      subtitleText: document.getElementById('subtitleText'),
+      showSubtitle: document.getElementById('showSubtitle'),
+      subControlPanel: document.getElementById('subControlPanel'),
+      subFontSelect: document.getElementById('subFontSelect'),
+      subSize: document.getElementById('subSize'),
+      subSizeInput: document.getElementById('subSizeInput'),
+      subColorPicker: document.getElementById('subColorPicker'),
+      subTextColorHex: document.getElementById('subTextColorHex'),
+      badgeText: document.getElementById('badgeText'),
+      showBadge: document.getElementById('showBadge'),
+      badgeControlPanel: document.getElementById('badgeControlPanel'),
+      badgeSize: document.getElementById('badgeSize'),
+      badgeSizeInput: document.getElementById('badgeSizeInput'),
+      badgeColorPicker: document.getElementById('badgeColorPicker'),
+      badgeColorHex: document.getElementById('badgeColorHex'),
+      gradColorPicker: document.getElementById('gradColorPicker'),
+      gradColorHex: document.getElementById('gradColorHex'),
+      gradIntensity: document.getElementById('gradIntensity'),
+      gradIntensityInput: document.getElementById('gradIntensityInput'),
+      gradHeight: document.getElementById('gradHeight'),
+      gradHeightInput: document.getElementById('gradHeightInput'),
+
+      // Body (본문) Inputs
+      showBodyTopBar: document.getElementById('showBodyTopBar'),
+      bodyCategoryText: document.getElementById('bodyCategoryText'),
+      bodyPageText: document.getElementById('bodyPageText'),
+      bodyCardOpacity: document.getElementById('bodyCardOpacity'),
+      bodyCardOpacityInput: document.getElementById('bodyCardOpacityInput'),
+      bodyTitleText: document.getElementById('bodyTitleText'),
+      bodyTitleFontSelect: document.getElementById('bodyTitleFontSelect'),
+      bodyAccentPicker: document.getElementById('bodyAccentPicker'),
+      bodyTitleSize: document.getElementById('bodyTitleSize'),
+      bodyTitleSizeInput: document.getElementById('bodyTitleSizeInput'),
+      bodyDescText: document.getElementById('bodyDescText'),
+      bodyDescSize: document.getElementById('bodyDescSize'),
+      bodyDescSizeInput: document.getElementById('bodyDescSizeInput'),
+      bodyLineHeight: document.getElementById('bodyLineHeight'),
+      bodyLineHeightInput: document.getElementById('bodyLineHeightInput'),
+      bodyDescColorPicker: document.getElementById('bodyDescColorPicker'),
+      bodyDescColorHex: document.getElementById('bodyDescColorHex'),
+      showBodyQuote: document.getElementById('showBodyQuote'),
+      bodyQuoteText: document.getElementById('bodyQuoteText'),
+      bodyQuoteAuthor: document.getElementById('bodyQuoteAuthor'),
+
+      // Ending (마무리) Inputs
+      showEndTag: document.getElementById('showEndTag'),
+      endTagText: document.getElementById('endTagText'),
+      endTitleText: document.getElementById('endTitleText'),
+      endTitleFontSelect: document.getElementById('endTitleFontSelect'),
+      endTitleSize: document.getElementById('endTitleSize'),
+      endTitleSizeInput: document.getElementById('endTitleSizeInput'),
+      endTitleColorPicker: document.getElementById('endTitleColorPicker'),
+      endTitleColorHex: document.getElementById('endTitleColorHex'),
+      endDescText: document.getElementById('endDescText'),
+      endDescSize: document.getElementById('endDescSize'),
+      endDescSizeInput: document.getElementById('endDescSizeInput'),
+      endCtaText: document.getElementById('endCtaText'),
+      endCtaColorPicker: document.getElementById('endCtaColorPicker'),
+      endCtaColorHex: document.getElementById('endCtaColorHex'),
+      showEndFooter: document.getElementById('showEndFooter'),
+      endHandleText: document.getElementById('endHandleText'),
+
+      // Cover Style New Inputs
+      coverStyleLabel: document.getElementById('coverStyleLabel'),
+      coverMagazineOptions: document.getElementById('coverMagazineOptions'),
+      coverStickerOptions: document.getElementById('coverStickerOptions'),
+      coverIssueTagText: document.getElementById('coverIssueTagText'),
+      coverCuratorText: document.getElementById('coverCuratorText'),
+      coverFrameColorPicker: document.getElementById('coverFrameColorPicker'),
+      coverStickerNumberText: document.getElementById('coverStickerNumberText'),
+      coverStickerCategoryText: document.getElementById('coverStickerCategoryText'),
+      coverStickerSubText: document.getElementById('coverStickerSubText'),
+      coverStickerColorPicker: document.getElementById('coverStickerColorPicker'),
+
+      // Body Style New Inputs
+      bodyStyleLabel: document.getElementById('bodyStyleLabel'),
+      bodyStepOptions: document.getElementById('bodyStepOptions'),
+      bodyStepBadgeText: document.getElementById('bodyStepBadgeText'),
+      bodyItem1TitleText: document.getElementById('bodyItem1TitleText'),
+      bodyItem1DescText: document.getElementById('bodyItem1DescText'),
+      bodyItem2TitleText: document.getElementById('bodyItem2TitleText'),
+      bodyItem2DescText: document.getElementById('bodyItem2DescText'),
+      bodyItem3TitleText: document.getElementById('bodyItem3TitleText'),
+      bodyItem3DescText: document.getElementById('bodyItem3DescText'),
+
+      // Ending Style New Inputs
+      endStyleLabel: document.getElementById('endStyleLabel'),
+      endSaveOptions: document.getElementById('endSaveOptions'),
+      endSeriesOptions: document.getElementById('endSeriesOptions'),
+      endSaveHookText: document.getElementById('endSaveHookText'),
+      endSaveCardTitleText: document.getElementById('endSaveCardTitleText'),
+      endSaveCardDescText: document.getElementById('endSaveCardDescText'),
+      endSaveSubCtaText: document.getElementById('endSaveSubCtaText'),
+      endNextBadgeText: document.getElementById('endNextBadgeText'),
+      endNextTitleText: document.getElementById('endNextTitleText'),
+      endNextDateText: document.getElementById('endNextDateText'),
+      endNextNoticeText: document.getElementById('endNextNoticeText')
+    };
+
+    // Helper: Two-way binding for slider and direct number input
+    function bindSliderAndNumber({ slider, numberInput, onUpdate, decimals = 0, min, max }) {
+      if (!slider || !numberInput) return;
+      const formatVal = (v) => decimals > 0 ? Number(v).toFixed(decimals) : Math.round(Number(v));
+
+      slider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        numberInput.value = formatVal(val);
+        onUpdate(val);
+      });
+
+      numberInput.addEventListener('input', (e) => {
+        let raw = e.target.value.trim();
+        if (raw === '' || raw === '-') return;
+        let val = parseFloat(raw);
+        if (isNaN(val)) return;
+
+        // 사용자가 0.85 형태로 0~1 소수로 입력했을 때 자동 백분율(85) 스케일 변환 지원
+        if (val > 0 && val <= 1 && max > 1) {
+          val = Math.round(val * 100);
+        }
+
+        // 입력 중일 때는 타이핑을 방해하지 않도록 min 미만이면 바로 덮어쓰지 않고 대기
+        if (min !== undefined && val < min) return;
+        if (max !== undefined && val > max) val = max;
+
+        slider.value = val;
+        onUpdate(val);
+      });
+
+      numberInput.addEventListener('change', (e) => {
+        let raw = e.target.value.trim();
+        let val = parseFloat(raw);
+        if (isNaN(val)) val = parseFloat(slider.value);
+
+        if (val > 0 && val <= 1 && max > 1) {
+          val = Math.round(val * 100);
+        }
+
+        if (min !== undefined && val < min) val = min;
+        if (max !== undefined && val > max) val = max;
+
+        numberInput.value = formatVal(val);
+        slider.value = val;
+        onUpdate(val);
+      });
+    }
+
+    // Helper: Hex color to RGB
+    function hexToRgb(hex) {
+      if (!hex) return { r: 0, g: 0, b: 0 };
+      let c = hex.replace('#', '').trim();
+      if (c.length === 3) {
+        c = c.split('').map(x => x + x).join('');
+      }
+      const num = parseInt(c, 16);
+      if (isNaN(num)) return { r: 0, g: 0, b: 0 };
+      return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255
+      };
+    }
+
+    // Toast helper (replaces alert)
+    function showToast(message) {
+      toastMsg.innerText = message;
+      toastBox.classList.remove('translate-y-20', 'opacity-0');
+      toastBox.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toastBox.classList.add('translate-y-20', 'opacity-0');
+        toastBox.classList.remove('translate-y-0', 'opacity-100');
+      }, 2600);
+    }
+
+    // Ratio Switcher
+    document.querySelectorAll('.ratio-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.ratio-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-800/60', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-800/60', 'text-slate-400');
+
+        const ratio = btn.dataset.ratio;
+        state.ratio = ratio;
+        if (ratio === '4:5') {
+          state.width = 1080;
+          state.height = 1350;
+        } else if (ratio === '1:1') {
+          state.width = 1080;
+          state.height = 1080;
+        } else if (ratio === '9:16') {
+          state.width = 1080;
+          state.height = 1920;
+        }
+        canvas.width = state.width;
+        canvas.height = state.height;
+        resolutionBadge.textContent = `${state.width} × ${state.height} px`;
+        renderCanvas();
+      });
+    });
+
+    // Generate an elegant SVG placeholder simulating news briefing photography
+    function createDefaultImage() {
+      const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
+        <defs>
+          <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1e293b"/>
+            <stop offset="50%" stop-color="#0f172a"/>
+            <stop offset="100%" stop-color="#020617"/>
+          </linearGradient>
+          <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.1"/>
+          </linearGradient>
+        </defs>
+        <rect width="1080" height="1350" fill="url(#bgGrad)"/>
+        
+        <!-- Subtle background shapes imitating diplomatic summit backdrop -->
+        <circle cx="850" cy="520" r="320" fill="#dc2626" opacity="0.15"/>
+        <circle cx="850" cy="620" r="320" fill="#2563eb" opacity="0.15"/>
+        
+        <rect x="0" y="0" width="1080" height="240" fill="url(#glowGrad)"/>
+        
+        <!-- Silhouette / Press Conference Mock Graphic -->
+        <g opacity="0.45" fill="#94a3b8">
+          <circle cx="340" cy="380" r="110"/>
+          <path d="M200,680 C200,520 250,470 340,470 C430,470 480,520 480,680 Z"/>
+          
+          <circle cx="740" cy="400" r="105"/>
+          <path d="M600,700 C600,540 650,490 740,490 C830,490 880,540 880,700 Z"/>
+        </g>
+        
+        <!-- Center instruction overlay -->
+        <text x="540" y="580" fill="#e2e8f0" font-family="sans-serif" font-size="28" font-weight="bold" text-anchor="middle">여기를 클릭하거나 사진을 업로드하세요</text>
+        <text x="540" y="625" fill="#64748b" font-family="sans-serif" font-size="20" text-anchor="middle">보도자료 사진, 인물 사진, 뉴스 캡처 등</text>
+      </svg>`;
+      
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        state.image = img;
+        renderCanvas();
+      };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    // Dynamic Viewport Fitting (Never overflows, always stays crisp and fully contained)
+    function fitCanvasToViewport() {
+      const container = document.getElementById('canvasViewport');
+      if (!container || !canvas) return;
+      const padX = 16;
+      const padY = 16;
+      const availW = Math.max(60, container.clientWidth - padX);
+      const availH = Math.max(60, container.clientHeight - padY);
+      const ratio = (state.width || 1080) / (state.height || 1350);
+      let targetW, targetH;
+
+      if (availW / availH > ratio) {
+        targetH = availH;
+        targetW = targetH * ratio;
+      } else {
+        targetW = availW;
+        targetH = targetW / ratio;
+      }
+
+      const finalW = `${Math.floor(targetW)}px`;
+      const finalH = `${Math.floor(targetH)}px`;
+      if (canvas.style.width !== finalW) canvas.style.width = finalW;
+      if (canvas.style.height !== finalH) canvas.style.height = finalH;
+    }
+
+    window.addEventListener('resize', fitCanvasToViewport);
+    if (window.ResizeObserver) {
+      window.addEventListener('DOMContentLoaded', () => {
+        const vp = document.getElementById('canvasViewport');
+        if (vp) new ResizeObserver(() => fitCanvasToViewport()).observe(vp);
+      });
+    }
+
+    function renderCanvas() {
+      fitCanvasToViewport();
+      // 1. Clear Canvas
+      ctx.clearRect(0, 0, state.width, state.height);
+
+      // 2. Draw Background Image with advanced filters & transform
+      if (state.image) {
+        ctx.save();
+        
+        // Transform: Horizontal / Vertical Flip
+        if (state.flipH || state.flipV) {
+          ctx.translate(state.width / 2, state.height / 2);
+          ctx.scale(state.flipH ? -1 : 1, state.flipV ? -1 : 1);
+          ctx.translate(-state.width / 2, -state.height / 2);
+        }
+
+        // Compose CSS Filters
+        let filterParts = [
+          `brightness(${state.brightness}%)`,
+          `contrast(${state.contrast}%)`,
+          `saturate(${state.saturate}%)`
+        ];
+
+        if (state.blur > 0) {
+          filterParts.push(`blur(${state.blur}px)`);
+        }
+
+        // Apply Mood Preset Modifiers
+        if (state.filterPreset === 'mono') {
+          filterParts.push('grayscale(100%)');
+        } else if (state.filterPreset === 'vintage') {
+          filterParts.push('sepia(45%)');
+        } else if (state.filterPreset === 'cinematic') {
+          filterParts.push('contrast(120%) brightness(92%)');
+        } else if (state.filterPreset === 'vivid') {
+          filterParts.push('saturate(130%) contrast(110%)');
+        } else if (state.filterPreset === 'matte') {
+          filterParts.push('contrast(88%) brightness(106%)');
+        }
+
+        ctx.filter = filterParts.join(' ');
+
+        const img = state.image;
+        const imgRatio = img.width / img.height;
+        const canvasRatio = state.width / state.height;
+
+        let drawW, drawH;
+        // Cover aspect ratio
+        if (imgRatio > canvasRatio) {
+          drawH = state.height;
+          drawW = state.height * imgRatio;
+        } else {
+          drawW = state.width;
+          drawH = state.width / imgRatio;
+        }
+
+        // Apply scale & pan
+        drawW *= state.zoom;
+        drawH *= state.zoom;
+
+        const x = (state.width - drawW) / 2 + state.panX;
+        const y = (state.height - drawH) / 2 + state.panY;
+
+        ctx.drawImage(img, x, y, drawW, drawH);
+        ctx.restore();
+
+        // 2-B. Color Tint Overlay
+        if (state.tintOpacity > 0) {
+          ctx.save();
+          ctx.fillStyle = state.tintColor;
+          ctx.globalAlpha = state.tintOpacity / 100;
+          ctx.fillRect(0, 0, state.width, state.height);
+          ctx.restore();
+        }
+
+        // 2-C. Vignette Effect
+        if (state.vignette > 0) {
+          ctx.save();
+          const radius = Math.max(state.width, state.height) * 0.72;
+          const vigGrad = ctx.createRadialGradient(
+            state.width / 2, state.height / 2, radius * 0.25,
+            state.width / 2, state.height / 2, radius
+          );
+          vigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+          vigGrad.addColorStop(1, `rgba(0, 0, 0, ${state.vignette / 100})`);
+          ctx.fillStyle = vigGrad;
+          ctx.fillRect(0, 0, state.width, state.height);
+          ctx.restore();
+        }
+
+      } else {
+        // Fallback fill
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, state.width, state.height);
+      }
+
+      // 3. Top subtle vignette for credit readability
+      if (state.showCredit && (state.creditPos === 'top-left' || state.creditPos === 'top-right' || !state.creditPos)) {
+        const topGrad = ctx.createLinearGradient(0, 0, 0, 180);
+        topGrad.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
+        topGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = topGrad;
+        ctx.fillRect(0, 0, state.width, 180);
+      }
+
+      // 4. Main Bottom Shadow Gradient (Text legibility engine)
+      const gradH = state.height * state.gradHeight;
+      const gradStartY = state.height - gradH;
+      const bottomGrad = ctx.createLinearGradient(0, gradStartY, 0, state.height);
+      
+      const { r: gr, g: gg, b: gb } = hexToRgb(state.gradColor || '#000000');
+      const maxAlpha = state.gradIntensity;
+      bottomGrad.addColorStop(0, `rgba(${gr}, ${gg}, ${gb}, 0)`);
+      bottomGrad.addColorStop(0.35, `rgba(${gr}, ${gg}, ${gb}, ${maxAlpha * 0.45})`);
+      bottomGrad.addColorStop(0.75, `rgba(${gr}, ${gg}, ${gb}, ${maxAlpha * 0.88})`);
+      bottomGrad.addColorStop(1, `rgba(${gr}, ${gg}, ${gb}, ${maxAlpha})`);
+
+      ctx.fillStyle = bottomGrad;
+      ctx.fillRect(0, gradStartY, state.width, gradH);
+
+      // Margins & Paddings
+      const marginX = 56;
+      const marginY = 64;
+
+      // 5. Template Overlays Routing
+      if (state.templateMode === 'cover') {
+        renderCoverOverlay(ctx, marginX, marginY);
+      } else if (state.templateMode === 'body') {
+        renderBodyOverlay(ctx, marginX, marginY);
+      } else if (state.templateMode === 'ending') {
+        renderEndingOverlay(ctx, marginX, marginY);
+      }
+
+      // 6. Universal Credit / Source Notation Overlay (Supported on all Cover styles, Body & Ending)
+      renderCreditOverlay(ctx, state);
+    }
+
+    // ==========================================
+    // Helper: Canvas Text Multi-line Auto-Wrap
+    // ==========================================
+    function wrapTextLines(ctx, text, maxWidth) {
+      if (!text) return [];
+      const paragraphs = text.split('\n');
+      const lines = [];
+
+      for (let p of paragraphs) {
+        if (p.trim() === '') {
+          lines.push('');
+          continue;
+        }
+        const words = p.split(' ');
+        let currentLine = '';
+
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i];
+          const testLine = currentLine ? currentLine + ' ' + word : word;
+          const testWidth = ctx.measureText(testLine).width;
+
+          if (testWidth > maxWidth && currentLine !== '') {
+            lines.push(currentLine);
+            if (ctx.measureText(word).width > maxWidth) {
+              let charLine = '';
+              for (let char of word) {
+                if (ctx.measureText(charLine + char).width > maxWidth) {
+                  lines.push(charLine);
+                  charLine = char;
+                } else {
+                  charLine += char;
+                }
+              }
+              currentLine = charLine;
+            } else {
+              currentLine = word;
+            }
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+      }
+      return lines;
+    }
+
+    // ==========================================
+    // Universal Credit / Source Notation Renderer
+    // ==========================================
+    function renderCreditOverlay(ctx, state) {
+      if (!state.showCredit || !state.credit || !state.credit.trim()) return;
+
+      ctx.save();
+      const text = state.credit.trim();
+      const pos = state.creditPos || 'top-left';
+      const style = state.creditStyle || 'minimal';
+      const size = Number(state.creditSize) || 20;
+      const opacity = (state.creditOpacity !== undefined ? Number(state.creditOpacity) : 85) / 100;
+
+      ctx.font = `500 ${size}px "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif`;
+      const metrics = ctx.measureText(text);
+      const textW = Math.round(metrics.width);
+      const textH = size;
+
+      // Padding for pill/badge styles
+      const padX = Math.round(size * 0.65);
+      const padY = Math.round(size * 0.35);
+      const badgeW = textW + (padX * 2);
+      const badgeH = textH + (padY * 2);
+
+      const margin = (state.coverDesignPreset === 'magazine-frame' && state.templateMode === 'cover') ? 50 : 28;
+
+      if (pos === 'vertical-right') {
+        // Vertical text along right margin (rotates -90 deg)
+        const vx = state.width - 24;
+        const vy = Math.round(state.height * 0.65);
+        ctx.translate(vx, vy);
+        ctx.rotate(-Math.PI / 2);
+
+        if (style === 'dark-pill') {
+          ctx.fillStyle = `rgba(15, 23, 42, ${Math.min(0.85, opacity * 0.95)})`;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(-padX, -textH - padY * 0.8, badgeW, badgeH, badgeH / 2);
+          else ctx.rect(-padX, -textH - padY * 0.8, badgeW, badgeH);
+          ctx.fill();
+          ctx.stroke();
+        } else if (style === 'light-pill') {
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.92, opacity)})`;
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.15)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(-padX, -textH - padY * 0.8, badgeW, badgeH, badgeH / 2);
+          else ctx.rect(-padX, -textH - padY * 0.8, badgeW, badgeH);
+          ctx.fill();
+          ctx.stroke();
+        } else if (style === 'accent-bar') {
+          ctx.fillStyle = '#6366f1';
+          ctx.fillRect(-padX, -textH - 2, 3, textH + 4);
+        }
+
+        ctx.fillStyle = style === 'light-pill' ? `rgba(15, 23, 42, ${Math.max(0.7, opacity)})` : `rgba(255, 255, 255, ${opacity})`;
+        if (style === 'minimal') {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+          ctx.shadowBlur = 5;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 1;
+        }
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+        return;
+      }
+
+      // Calculate anchor coordinates (X, Y)
+      let bx, by; // badge top-left
+      let tx, ty; // text baseline
+
+      // Adaptive Y offset for Body template if top bar is shown
+      let topY = margin;
+      if (state.templateMode === 'body' && state.showBodyTopBar && (pos === 'top-left' || pos === 'top-right')) {
+        topY = margin + 48;
+      }
+
+      if (pos === 'top-right') {
+        bx = state.width - margin - badgeW;
+        by = topY;
+        tx = state.width - margin - padX - textW;
+        ty = by + padY + textH * 0.85;
+      } else if (pos === 'bottom-left') {
+        bx = margin;
+        by = state.height - margin - badgeH;
+        tx = bx + padX;
+        ty = by + padY + textH * 0.85;
+      } else if (pos === 'bottom-right') {
+        bx = state.width - margin - badgeW;
+        by = state.height - margin - badgeH;
+        tx = state.width - margin - padX - textW;
+        ty = by + padY + textH * 0.85;
+      } else {
+        // top-left (default)
+        bx = margin;
+        by = topY;
+        tx = bx + padX;
+        ty = by + padY + textH * 0.85;
+      }
+
+      if (style === 'dark-pill') {
+        ctx.fillStyle = `rgba(15, 23, 42, ${Math.min(0.85, opacity * 0.95)})`;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx, by, badgeW, badgeH, badgeH / 2);
+        else ctx.rect(bx, by, badgeW, badgeH);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.fillText(text, tx, ty);
+      } else if (style === 'light-pill') {
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.92, opacity)})`;
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx, by, badgeW, badgeH, badgeH / 2);
+        else ctx.rect(bx, by, badgeW, badgeH);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = `rgba(15, 23, 42, ${Math.max(0.7, opacity)})`;
+        ctx.fillText(text, tx, ty);
+      } else if (style === 'accent-bar') {
+        const barW = Math.max(3, Math.round(size * 0.18));
+        ctx.fillStyle = '#6366f1';
+        ctx.fillRect(tx - 10, ty - textH * 0.88, barW, textH * 1.05);
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowBlur = 5;
+        ctx.fillText(text, tx, ty);
+      } else {
+        // 'minimal' text with subtle shadow
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+        ctx.shadowBlur = 5;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+        const mx = (pos === 'top-right' || pos === 'bottom-right') ? (state.width - margin - textW) : margin;
+        const my = (pos === 'bottom-left' || pos === 'bottom-right') ? (state.height - margin) : (topY + textH * 0.85);
+        ctx.fillText(text, mx, my);
+      }
+
+      ctx.restore();
+    }
+
+    // ==========================================
+    // 1. COVER TEMPLATE OVERLAY (표지 커버)
+    // ==========================================
+    function renderCoverOverlay(ctx, marginX, marginY) {
+      const coverPreset = state.coverDesignPreset || 'editorial';
+
+      // ==========================================
+      // [Cover Style 2] 매거진 프레임 (Magazine Frame)
+      // ==========================================
+      if (coverPreset === 'magazine-frame') {
+        ctx.save();
+        const framePad = 36;
+        const frameW = state.width - (framePad * 2);
+        const frameH = state.height - (framePad * 2);
+
+        // 1. Inset Border Frame (우아한 외곽선 액자)
+        ctx.strokeStyle = state.coverFrameColor || '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 8;
+        ctx.strokeRect(framePad, framePad, frameW, frameH);
+
+        // 2. Corner Deco Crosses (+)
+        const cornerSize = 8;
+        ctx.lineWidth = 2;
+        [[framePad, framePad], [state.width - framePad, framePad], 
+         [framePad, state.height - framePad], [state.width - framePad, state.height - framePad]].forEach(([cx, cy]) => {
+          ctx.beginPath();
+          ctx.moveTo(cx - cornerSize, cy);
+          ctx.lineTo(cx + cornerSize, cy);
+          ctx.moveTo(cx, cy - cornerSize);
+          ctx.lineTo(cx, cy + cornerSize);
+          ctx.stroke();
+        });
+
+        // 3. Top Stamp (에디션 / 날짜 / 매거진 호수)
+        if (state.coverIssueTag && state.coverIssueTag.trim()) {
+          ctx.font = '600 20px "Pretendard", -apple-system, sans-serif';
+          ctx.fillStyle = state.coverFrameColor || '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if ('letterSpacing' in ctx) ctx.letterSpacing = '2px';
+          ctx.fillText(state.coverIssueTag, state.width / 2, framePad + 36);
+          if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+        }
+
+        // 4. Center-Focused Elegant Headline
+        if (state.headline && state.headline.trim()) {
+          const fontSize = Math.round(state.headlineSize * 1.05);
+          ctx.font = `800 ${fontSize}px ${state.headlineFont}`;
+          const hlLines = state.headline.split('\n');
+          const lineH = fontSize * state.headlineLineHeight;
+          const totalTextH = (hlLines.length - 1) * lineH;
+
+          let startY = (state.height / 2) - (totalTextH / 2) - 10 + state.headlineOffsetY;
+          if (state.headlineVPos === 'top') startY = framePad + 160 + state.headlineOffsetY;
+          else if (state.headlineVPos === 'bottom') startY = state.height - framePad - 200 - totalTextH + state.headlineOffsetY;
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillStyle = state.headlineColor || '#ffffff';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+          ctx.shadowBlur = 18;
+          ctx.shadowOffsetY = 4;
+
+          hlLines.forEach((line, idx) => {
+            ctx.fillText(line, state.width / 2, startY + (idx * lineH));
+          });
+
+          // Delicate Center Divider (── ◈ ──)
+          const lastLineY = startY + ((hlLines.length - 1) * lineH);
+          const decoY = lastLineY + 28;
+          ctx.beginPath();
+          ctx.moveTo((state.width / 2) - 90, decoY);
+          ctx.lineTo((state.width / 2) - 20, decoY);
+          ctx.moveTo((state.width / 2) + 20, decoY);
+          ctx.lineTo((state.width / 2) + 90, decoY);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          ctx.font = '14px sans-serif';
+          ctx.fillText('◈', state.width / 2, decoY + 4);
+
+          // Subtitle beneath decorative line
+          if (state.showSubtitle && state.subtitle.trim()) {
+            const subFont = state.subFont === 'inherit' ? state.headlineFont : state.subFont;
+            ctx.font = `600 ${state.subSize}px ${subFont}`;
+            ctx.fillStyle = state.subTextColor || '#cbd5e1';
+            ctx.fillText(state.subtitle, state.width / 2, decoY + state.subSize + 14);
+          }
+        }
+
+        // 5. Bottom Curator / Signature Tag
+        if (state.coverCurator && state.coverCurator.trim()) {
+          ctx.font = '700 18px "Pretendard", -apple-system, sans-serif';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if ('letterSpacing' in ctx) ctx.letterSpacing = '3px';
+          ctx.fillText(state.coverCurator, state.width / 2, state.height - framePad - 32);
+          if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+        }
+
+        ctx.restore();
+        return;
+      }
+
+      // ==========================================
+      // [Cover Style 3] 스티커 팁 (Sticker Bold)
+      // ==========================================
+      if (coverPreset === 'sticker-bold') {
+        ctx.save();
+
+        // 1. Top Bold Sticker Tag
+        let topY = 64;
+        const stickerBg = state.coverStickerColor || '#facc15';
+
+        // 1-A. Number Badge (e.g. TIP 01)
+        if (state.coverStickerNumber && state.coverStickerNumber.trim()) {
+          ctx.font = '900 24px "Pretendard", -apple-system, sans-serif';
+          const numMetrics = ctx.measureText(state.coverStickerNumber);
+          const numPadX = 18;
+          const numPadY = 10;
+          const numW = numMetrics.width + (numPadX * 2);
+          const numH = 24 + (numPadY * 2);
+
+          ctx.beginPath();
+          ctx.roundRect(marginX, topY, numW, numH, 10);
+          ctx.fillStyle = stickerBg;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 10;
+          ctx.shadowOffsetY = 3;
+          ctx.fill();
+
+          ctx.fillStyle = '#000000';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(state.coverStickerNumber, marginX + (numW / 2), topY + (numH / 2));
+
+          // 1-B. Category Tag (Right of Number Badge)
+          if (state.coverStickerCategory && state.coverStickerCategory.trim()) {
+            ctx.font = '800 20px "Pretendard", -apple-system, sans-serif';
+            const catMetrics = ctx.measureText(state.coverStickerCategory);
+            const catPadX = 16;
+            const catW = catMetrics.width + (catPadX * 2);
+            const catX = marginX + numW + 10;
+
+            ctx.beginPath();
+            ctx.roundRect(catX, topY, catW, numH, 10);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(state.coverStickerCategory, catX + (catW / 2), topY + (numH / 2));
+          }
+        }
+
+        // 2. Highlighting Text Box Headline (형광펜 박스 헤드라인)
+        if (state.headline && state.headline.trim()) {
+          const fontSize = state.headlineSize;
+          ctx.font = `900 ${fontSize}px ${state.headlineFont}`;
+          const hlLines = state.headline.split('\n');
+          const lineH = fontSize * 1.35;
+          const totalH = (hlLines.length - 1) * lineH;
+
+          let startY = state.height - 230 - totalH + state.headlineOffsetY;
+          if (state.headlineVPos === 'middle') startY = (state.height - totalH) / 2 + state.headlineOffsetY;
+          else if (state.headlineVPos === 'top') startY = topY + 110 + state.headlineOffsetY;
+
+          const boxPadX = 20;
+          const boxPadY = 12;
+
+          hlLines.forEach((line, idx) => {
+            if (!line.trim()) return;
+            const lineMetrics = ctx.measureText(line);
+            const boxW = lineMetrics.width + (boxPadX * 2);
+            const boxH = fontSize + (boxPadY * 2);
+            const curY = startY + (idx * lineH);
+
+            let boxX = marginX;
+            if (state.headlineAlign === 'center') boxX = (state.width - boxW) / 2;
+            else if (state.headlineAlign === 'right') boxX = state.width - marginX - boxW;
+
+            // Highlight Box
+            ctx.beginPath();
+            ctx.roundRect(boxX, curY - (fontSize * 0.85) - boxPadY, boxW, boxH, 12);
+            // Alternate colors or primary sticker color
+            ctx.fillStyle = idx % 2 === 0 ? stickerBg : '#ffffff';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+            ctx.shadowBlur = 14;
+            ctx.shadowOffsetY = 4;
+            ctx.fill();
+
+            // Text inside box
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = '#0f172a'; // Deep slate black text for maximum punch
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(line, boxX + boxPadX, curY);
+          });
+
+          // 3. Subtitle / Punchline Pill Label
+          if (state.showSubtitle && state.subtitle.trim()) {
+            const lastLineY = startY + ((hlLines.length - 1) * lineH);
+            const punchY = lastLineY + 36;
+            ctx.font = '700 24px "Pretendard", -apple-system, sans-serif';
+            const subMetrics = ctx.measureText(state.subtitle);
+            const subPadX = 22;
+            const subPadY = 12;
+            const subW = subMetrics.width + (subPadX * 2);
+            const subH = 24 + (subPadY * 2);
+
+            let subX = marginX;
+            if (state.headlineAlign === 'center') subX = (state.width - subW) / 2;
+            else if (state.headlineAlign === 'right') subX = state.width - marginX - subW;
+
+            ctx.beginPath();
+            ctx.roundRect(subX, punchY, subW, subH, subH / 2);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 3;
+            ctx.fill();
+
+            ctx.strokeStyle = stickerBg;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = stickerBg;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(state.subtitle, subX + (subW / 2), punchY + (subH / 2));
+          }
+        }
+
+        ctx.restore();
+        return;
+      }
+
+      // ==========================================
+      // [Cover Style 1] 에디토리얼 (기본 시네마틱 뉴스)
+      // ==========================================
+      // 1. Optional Top Badge
+      if (state.showBadge && state.badge.trim()) {
+        ctx.save();
+        const fontSize = state.badgeSize;
+        ctx.font = `800 ${fontSize}px "Pretendard", -apple-system, sans-serif`;
+        
+        const padX = Math.round(fontSize * 0.72);
+        const padY = Math.round(fontSize * 0.42);
+        const textMetrics = ctx.measureText(state.badge);
+        const badgeW = Math.round(textMetrics.width + (padX * 2));
+        const badgeH = Math.round(fontSize + (padY * 2));
+
+        let cornerRadius = 8;
+        if (state.badgeRadius === 'pill') cornerRadius = badgeH / 2;
+        else if (state.badgeRadius === 'rounded') cornerRadius = Math.max(4, Math.round(fontSize * 0.35));
+        else if (state.badgeRadius === 'square') cornerRadius = 0;
+
+        let badgeX = marginX;
+        let badgeY = 60;
+
+        if (state.badgePosition === 'above-headline') {
+          const hlFontSize = state.headlineSize;
+          const hlLines = state.headline.split('\n');
+          const hlLineHeight = hlFontSize * state.headlineLineHeight;
+          const totalHlHeight = (hlLines.length - 1) * hlLineHeight;
+          
+          let baseHlStartY = state.height - (state.showSubtitle && state.subPosition === 'bottom-opposite' ? 140 : 80) - totalHlHeight;
+          if (state.headlineVPos === 'middle') {
+            baseHlStartY = (state.height - totalHlHeight) / 2;
+          } else if (state.headlineVPos === 'top') {
+            baseHlStartY = 160;
+          }
+          const hlStartY = baseHlStartY + state.headlineOffsetY;
+          badgeY = hlStartY - (hlFontSize * 0.82) - badgeH - 18;
+
+          if (state.headlineAlign === 'center') badgeX = (state.width - badgeW) / 2;
+          else if (state.headlineAlign === 'right') badgeX = state.width - marginX - badgeW;
+          else badgeX = marginX;
+        } else if (state.badgePosition === 'top-left') {
+          badgeX = marginX;
+          badgeY = (state.showCredit && state.credit.trim() && (state.creditPos || 'top-left') === 'top-left') ? 76 : 52;
+        } else if (state.badgePosition === 'top-right') {
+          badgeX = state.width - marginX - badgeW;
+          badgeY = 52;
+        }
+
+        ctx.beginPath();
+        if (cornerRadius > 0 && ctx.roundRect) {
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, cornerRadius);
+        } else {
+          ctx.rect(badgeX, badgeY, badgeW, badgeH);
+        }
+
+        if (state.badgeStyle === 'solid') {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 3;
+          ctx.fillStyle = state.badgeBgColor;
+          ctx.fill();
+        } else if (state.badgeStyle === 'outline') {
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+          ctx.fill();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+          ctx.shadowBlur = 8;
+          ctx.strokeStyle = state.badgeBgColor;
+          ctx.lineWidth = Math.max(2, Math.round(fontSize * 0.09));
+          ctx.stroke();
+        } else if (state.badgeStyle === 'glass') {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 4;
+          
+          let hex = state.badgeBgColor.replace('#', '');
+          if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+          const r = parseInt(hex.substring(0, 2), 16) || 239;
+          const g = parseInt(hex.substring(2, 4), 16) || 68;
+          const b = parseInt(hex.substring(4, 6), 16) || 68;
+
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.32)`;
+          ctx.fill();
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
+          ctx.lineWidth = Math.max(1.5, Math.round(fontSize * 0.06));
+          ctx.stroke();
+        }
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.fillStyle = state.badgeTextColor;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(state.badge, badgeX + padX, badgeY + (badgeH / 2));
+        ctx.restore();
+      }
+
+      // 3. Main Headline
+      let hlStartY = state.height - 180;
+      let targetX = marginX;
+      const hlLines = state.headline.split('\n');
+      const fontSize = state.headlineSize;
+      const lineHeight = fontSize * state.headlineLineHeight;
+
+      if (state.headline.trim()) {
+        ctx.save();
+        ctx.font = `800 ${fontSize}px ${state.headlineFont}`;
+        
+        const totalHlHeight = (hlLines.length - 1) * lineHeight;
+        let baseHlStartY = state.height - (state.showSubtitle && state.subPosition === 'bottom-opposite' ? 140 : 80) - totalHlHeight;
+        if (state.headlineVPos === 'middle') {
+          baseHlStartY = (state.height - totalHlHeight) / 2;
+        } else if (state.headlineVPos === 'top') {
+          baseHlStartY = 160;
+        }
+        hlStartY = baseHlStartY + state.headlineOffsetY;
+
+        if (state.headlineAlign === 'center') {
+          ctx.textAlign = 'center';
+          targetX = state.width / 2;
+        } else if (state.headlineAlign === 'right') {
+          ctx.textAlign = 'right';
+          targetX = state.width - marginX;
+        } else {
+          ctx.textAlign = 'left';
+          targetX = marginX;
+        }
+
+        if (state.headlineStyle === 'box') {
+          ctx.save();
+          const padX = Math.round(fontSize * 0.28);
+          const padY = Math.round(fontSize * 0.16);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+          ctx.shadowBlur = 10;
+          ctx.shadowOffsetY = 3;
+
+          hlLines.forEach((line, index) => {
+            if (!line.trim()) return;
+            const lineY = hlStartY + (index * lineHeight);
+            const lineW = ctx.measureText(line).width;
+            const boxW = lineW + (padX * 2);
+            const boxH = fontSize + (padY * 2);
+            let boxX = targetX - padX;
+            if (state.headlineAlign === 'center') boxX = targetX - (boxW / 2);
+            else if (state.headlineAlign === 'right') boxX = targetX - lineW - padX;
+
+            const boxY = lineY - (fontSize * 0.85) - padY;
+            ctx.beginPath();
+            ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+            ctx.fill();
+          });
+          ctx.restore();
+        }
+
+        if (state.headlineStyle === 'soft-shadow') {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 3;
+        } else if (state.headlineStyle === 'deep-shadow') {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+          ctx.shadowBlur = 20;
+          ctx.shadowOffsetY = 6;
+        } else {
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
+        }
+
+        if (state.headlineStyle === 'stroke') {
+          ctx.save();
+          ctx.lineWidth = Math.max(3, Math.round(fontSize * 0.08));
+          ctx.strokeStyle = '#000000';
+          ctx.lineJoin = 'round';
+          hlLines.forEach((line, index) => {
+            ctx.strokeText(line, targetX, hlStartY + (index * lineHeight));
+          });
+          ctx.restore();
+        }
+
+        ctx.fillStyle = state.headlineColor;
+        hlLines.forEach((line, index) => {
+          ctx.fillText(line, targetX, hlStartY + (index * lineHeight));
+        });
+        ctx.restore();
+      }
+
+      // 4. Subtitle
+      if (state.showSubtitle && state.subtitle.trim()) {
+        ctx.save();
+        const subFont = state.subFont === 'inherit' ? state.headlineFont : state.subFont;
+        ctx.font = `600 ${state.subSize}px ${subFont}`;
+        ctx.fillStyle = state.subTextColor;
+        
+        const { r: sr, g: sg, b: sb } = hexToRgb(state.subTextColor || '#ffffff');
+        const isSubDark = (sr * 0.299 + sg * 0.587 + sb * 0.114) < 130;
+        ctx.shadowColor = isSubDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(0, 0, 0, 0.65)';
+        ctx.shadowBlur = isSubDark ? 6 : 8;
+        ctx.shadowOffsetY = 2;
+
+        if (state.subPosition === 'bottom-opposite') {
+          ctx.textAlign = 'right';
+          const subY = state.height - marginY;
+          ctx.fillText(state.subtitle, state.width - marginX, subY);
+        } else if (state.subPosition === 'below-headline') {
+          ctx.textAlign = state.headlineAlign;
+          const lastLineY = hlStartY + ((hlLines.length - 1) * lineHeight);
+          const subY = lastLineY + (state.subSize * 1.35) + 14;
+          ctx.fillText(state.subtitle, targetX, subY);
+        } else if (state.subPosition === 'above-headline') {
+          ctx.textAlign = state.headlineAlign;
+          const subY = hlStartY - (fontSize * 0.85) - 18;
+          ctx.fillText(state.subtitle, targetX, subY);
+        }
+        ctx.restore();
+      }
+    }
+
+    // ==========================================
+    // 2. BODY TEMPLATE OVERLAY (본문 내용)
+    // ==========================================
+    function renderBodyOverlay(ctx, marginX, marginY) {
+      const bodyStyle = state.bodyCardStyle || 'glass';
+
+      // 1. Top Bar: Progress Indicator, Category Tag & Page Number
+      if (state.showBodyTopBar) {
+        ctx.save();
+
+        // 1-A. Subtle Top Progress Bar
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillRect(0, 0, state.width, 4);
+        ctx.fillStyle = state.bodyAccentColor;
+        ctx.fillRect(0, 0, state.width * 0.33, 4);
+
+        // 1-B. Category Tag (Top Left)
+        if (state.bodyCategory.trim()) {
+          ctx.font = '700 22px "Pretendard", -apple-system, sans-serif';
+          const catMetrics = ctx.measureText(state.bodyCategory);
+          const catPadX = 18;
+          const catPadY = 10;
+          const catW = catMetrics.width + (catPadX * 2);
+          const catH = 22 + (catPadY * 2);
+          const catX = marginX;
+          const catY = 48;
+
+          ctx.beginPath();
+          ctx.roundRect(catX, catY, catW, catH, catH / 2);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetY = 2;
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.shadowColor = 'transparent';
+          ctx.fillStyle = '#ffffff';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(state.bodyCategory, catX + catPadX, catY + (catH / 2));
+        }
+
+        // 1-C. Page Number Indicator (Top Right)
+        if (state.bodyPage.trim()) {
+          ctx.font = '700 22px "Pretendard", -apple-system, sans-serif';
+          const pageMetrics = ctx.measureText(state.bodyPage);
+          const pagePadX = 18;
+          const pagePadY = 10;
+          const pageW = pageMetrics.width + (pagePadX * 2);
+          const pageH = 22 + (pagePadY * 2);
+          const pageX = state.width - marginX - pageW;
+          const pageY = 48;
+
+          ctx.beginPath();
+          ctx.roundRect(pageX, pageY, pageW, pageH, pageH / 2);
+          ctx.fillStyle = 'rgba(99, 102, 241, 0.28)';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetY = 2;
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(99, 102, 241, 0.55)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          ctx.shadowColor = 'transparent';
+          ctx.fillStyle = '#ffffff';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(state.bodyPage, pageX + pagePadX, pageY + (pageH / 2));
+        }
+        ctx.restore();
+      }
+
+      // ==========================================
+      // [Body Style 2] 3단 체크리스트 (Step / Checklist)
+      // ==========================================
+      if (bodyStyle === 'step') {
+        ctx.save();
+        let curY = state.showBodyTopBar ? 116 : 76;
+
+        // 1. Step Badge (e.g. STEP 01)
+        if (state.bodyStepBadge && state.bodyStepBadge.trim()) {
+          ctx.font = '900 20px "Pretendard", -apple-system, sans-serif';
+          const stepMetrics = ctx.measureText(state.bodyStepBadge);
+          const stepPadX = 16;
+          const stepPadY = 6;
+          const stepW = Math.round(stepMetrics.width + (stepPadX * 2));
+          const stepH = 20 + (stepPadY * 2);
+
+          ctx.beginPath();
+          ctx.roundRect(marginX, curY, stepW, stepH, stepH / 2);
+          ctx.fillStyle = state.bodyAccentColor || '#6366f1';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetY = 2;
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(state.bodyStepBadge, marginX + (stepW / 2), curY + (stepH / 2));
+          curY += stepH + 16;
+        }
+
+        // 2. Section Title (글자 겹침 방지: textBaseline='top' 및 줄바꿈 지원)
+        if (state.bodyTitle && state.bodyTitle.trim()) {
+          const titleFontSize = Math.min(state.bodyTitleSize, 34);
+          ctx.font = `800 ${titleFontSize}px ${state.bodyTitleFont}`;
+          const maxTitleW = state.width - (marginX * 2);
+          
+          // 사용자가 입력한 \n 줄바꿈과 폭 래핑 동시 반영
+          const rawLines = state.bodyTitle.split('\n');
+          const finalTitleLines = [];
+          rawLines.forEach(rLine => {
+            const wrapped = wrapTextLines(ctx, rLine, maxTitleW);
+            finalTitleLines.push(...wrapped);
+          });
+
+          const titleLineH = Math.round(titleFontSize * 1.25);
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetY = 2;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+
+          finalTitleLines.forEach((tLine, idx) => {
+            ctx.fillText(tLine, marginX, curY + (idx * titleLineH));
+          });
+          curY += (finalTitleLines.length * titleLineH) + 20;
+        }
+
+        // 3. 3 Checklist Cards (제목 & 설명 겹침 원천 차단 구조)
+        const cardItems = [
+          { title: state.bodyItem1Title, desc: state.bodyItem1Desc },
+          { title: state.bodyItem2Title, desc: state.bodyItem2Desc },
+          { title: state.bodyItem3Title, desc: state.bodyItem3Desc }
+        ];
+
+        const listW = state.width - (marginX * 2);
+        const availableH = state.height - curY - marginY;
+        const cardGap = 14;
+        const itemCardH = Math.max(140, Math.min(Math.floor((availableH - (cardGap * 2)) / 3), 190));
+
+        cardItems.forEach((item, index) => {
+          const itemY = curY + (index * (itemCardH + cardGap));
+
+          // Container Glass Box
+          ctx.beginPath();
+          ctx.roundRect(marginX, itemY, listW, itemCardH, 18);
+          ctx.fillStyle = `rgba(15, 23, 42, ${state.bodyCardOpacity || 0.85})`;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+          ctx.shadowBlur = 14;
+          ctx.shadowOffsetY = 4;
+          ctx.fill();
+
+          ctx.strokeStyle = index === 0 ? state.bodyAccentColor : 'rgba(255, 255, 255, 0.12)';
+          ctx.lineWidth = index === 0 ? 1.5 : 1;
+          ctx.stroke();
+
+          // 텍스트/아이콘이 카드 박스 바깥을 침범하지 않도록 안전 클리핑 적용
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(marginX, itemY, listW, itemCardH, 18);
+          ctx.clip();
+
+          // 그림자 리셋
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
+
+          // Left Check Icon Badge
+          const cardPadY = 18;
+          const cardPadX = 22;
+          const iconR = 17;
+          const iconX = marginX + cardPadX + iconR;
+          const iconY = itemY + cardPadY + iconR;
+
+          ctx.beginPath();
+          ctx.arc(iconX, iconY, iconR, 0, Math.PI * 2);
+          ctx.fillStyle = index === 0 ? state.bodyAccentColor : 'rgba(51, 65, 85, 0.85)';
+          ctx.fill();
+
+          ctx.font = '900 16px "Pretendard", -apple-system, sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('✔', iconX, iconY);
+
+          // Content Area (Title + Description)
+          const textStartX = iconX + iconR + 16;
+          const maxTextW = listW - (textStartX - marginX) - cardPadX;
+
+          // Item Title (textBaseline='top'으로 확실한 상단 고정)
+          const itemTitleFont = '700 22px "Pretendard", -apple-system, sans-serif';
+          ctx.font = itemTitleFont;
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+
+          const titleText = item.title || `포인트 0${index + 1}`;
+          const titleLines = wrapTextLines(ctx, titleText, maxTextW);
+          const renderedTitleLines = titleLines.slice(0, 2);
+          const titleLineH = 26;
+
+          renderedTitleLines.forEach((tLine, tIdx) => {
+            ctx.fillText(tLine, textStartX, itemY + cardPadY + (tIdx * titleLineH));
+          });
+
+          // Item Description (제목 끝 지점 + 10px 여백 후 시작하며 카드 하단 여백 엄격 준수)
+          if (item.desc && item.desc.trim()) {
+            const descFontSize = 17;
+            ctx.font = `500 ${descFontSize}px "Pretendard", -apple-system, sans-serif`;
+            ctx.fillStyle = '#cbd5e1';
+            ctx.textBaseline = 'top';
+
+            const descStartY = itemY + cardPadY + (renderedTitleLines.length * titleLineH) + 9;
+            const descLineH = 25; // 넉넉한 1.47배 행간
+            const availableDescH = (itemY + itemCardH) - descStartY - 14;
+            const maxDescLines = Math.max(0, Math.floor(availableDescH / descLineH));
+
+            const rawDescLines = item.desc.split('\n');
+            const allDescLines = [];
+            rawDescLines.forEach(rDesc => {
+              allDescLines.push(...wrapTextLines(ctx, rDesc, maxTextW));
+            });
+
+            if (maxDescLines > 0) {
+              const displayLines = allDescLines.slice(0, Math.min(allDescLines.length, maxDescLines, 3));
+              displayLines.forEach((dLine, dIdx) => {
+                let textToDraw = dLine;
+                if (dIdx === displayLines.length - 1 && allDescLines.length > displayLines.length) {
+                  if (textToDraw.length > 3) textToDraw = textToDraw.slice(0, -1) + '...';
+                }
+                ctx.fillText(textToDraw, textStartX, descStartY + (dIdx * descLineH));
+              });
+            }
+          }
+
+          ctx.restore(); // 카드 클리핑 해제
+        });
+
+        ctx.restore();
+        return;
+      }
+
+      // ==========================================
+      // [Body Style 3] 감성 분할 스토리 (Split / Editorial Story)
+      // ==========================================
+      if (bodyStyle === 'split') {
+        ctx.save();
+        const splitSheetY = Math.round(state.height * 0.40);
+        const splitSheetH = state.height - splitSheetY + 30;
+
+        // Bottom Story Sheet Container
+        ctx.beginPath();
+        ctx.roundRect(0, splitSheetY, state.width, splitSheetH, [40, 40, 0, 0]);
+        ctx.fillStyle = `rgba(15, 23, 42, ${Math.min(state.bodyCardOpacity + 0.05, 0.96)})`;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 30;
+        ctx.shadowOffsetY = -10;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // Top Sheet Pull Bar
+        ctx.beginPath();
+        ctx.roundRect((state.width - 64) / 2, splitSheetY + 16, 64, 5, 3);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fill();
+
+        // Decorative Large Watermark Quote (“)
+        ctx.font = '900 130px "Pretendard", serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+        ctx.textAlign = 'right';
+        ctx.fillText('“', state.width - marginX, splitSheetY + 140);
+
+        let contentY = splitSheetY + 60;
+        const contentX = marginX + 16;
+        const maxContentW = state.width - (contentX * 2);
+
+        // Section Title
+        if (state.bodyTitle && state.bodyTitle.trim()) {
+          const titleFontSize = state.bodyTitleSize;
+          ctx.font = `800 ${titleFontSize}px ${state.bodyTitleFont}`;
+          const titleLines = state.bodyTitle.split('\n');
+          const titleLineH = titleFontSize * 1.22;
+
+          // Left Accent Strip
+          const barW = 5;
+          const barH = (titleLines.length * titleLineH) - 8;
+          ctx.beginPath();
+          ctx.roundRect(contentX, contentY - (titleFontSize * 0.85), barW, barH, 3);
+          ctx.fillStyle = state.bodyAccentColor;
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+          ctx.shadowBlur = 8;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+
+          titleLines.forEach((tLine, idx) => {
+            ctx.fillText(tLine, contentX + barW + 16, contentY + (idx * titleLineH));
+          });
+          contentY += (titleLines.length * titleLineH) + 34;
+        }
+
+        // Body Description (Spacious Emotional Line Height)
+        if (state.bodyDesc && state.bodyDesc.trim()) {
+          const descFontSize = state.bodyDescSize;
+          ctx.font = `500 ${descFontSize}px "Pretendard", -apple-system, sans-serif`;
+          const descLineH = Math.round(descFontSize * (state.bodyLineHeight || 1.7));
+          const wrapped = wrapTextLines(ctx, state.bodyDesc, maxContentW);
+
+          ctx.fillStyle = state.bodyDescColor || '#e2e8f0';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 6;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+
+          wrapped.forEach((line) => {
+            if (line === '') {
+              contentY += descLineH * 0.5;
+            } else {
+              ctx.fillText(line, contentX, contentY);
+              contentY += descLineH;
+            }
+          });
+          contentY += 28;
+        }
+
+        // Sub Callout / Curator Note
+        if (state.showBodyQuote && state.bodyQuote.trim()) {
+          const quoteFontSize = Math.round(state.bodyDescSize * 0.95);
+          ctx.font = `600 ${quoteFontSize}px "Pretendard", -apple-system, sans-serif`;
+          const quoteLines = wrapTextLines(ctx, state.bodyQuote, maxContentW - 36);
+          const qBoxH = (quoteLines.length * (quoteFontSize * 1.5)) + 36;
+
+          ctx.beginPath();
+          ctx.roundRect(contentX, contentY, maxContentW, qBoxH, 14);
+          ctx.fillStyle = 'rgba(99, 102, 241, 0.12)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(99, 102, 241, 0.35)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = '#fef08a';
+          let qY = contentY + 24 + (quoteFontSize * 0.75);
+          quoteLines.forEach((qLine) => {
+            ctx.fillText(qLine, contentX + 18, qY);
+            qY += quoteFontSize * 1.5;
+          });
+        }
+
+        ctx.restore();
+        return;
+      }
+
+      // ==========================================
+      // [Body Style 1] 글래스 모피즘 (Glass Container)
+      // ==========================================
+      const cardX = marginX - 12;
+      const cardW = state.width - (cardX * 2);
+      const cardY = state.showBodyTopBar ? 116 : 80;
+      const cardH = state.height - cardY - 54;
+      let contentY = cardY + 44;
+      let contentX = cardX + 36;
+      let maxContentW = cardW - 72;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(cardX, cardY, cardW, cardH, 28);
+      ctx.fillStyle = `rgba(15, 23, 42, ${state.bodyCardOpacity})`;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = 24;
+      ctx.shadowOffsetY = 8;
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.restore();
+
+      // 3. Section Title + Vertical Colored Accent Bar
+      if (state.bodyTitle.trim()) {
+        ctx.save();
+        const titleFontSize = state.bodyTitleSize;
+        ctx.font = `800 ${titleFontSize}px ${state.bodyTitleFont}`;
+        const titleLines = state.bodyTitle.split('\n');
+        const titleLineHeight = titleFontSize * 1.22;
+
+        // Accent Bar
+        const barW = 6;
+        const barH = (titleLines.length * titleLineHeight) - (titleFontSize * 0.2);
+        const barX = contentX;
+        const barY = contentY - (titleFontSize * 0.85);
+
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, barW, barH, 3);
+        ctx.fillStyle = state.bodyAccentColor;
+        ctx.shadowColor = state.bodyAccentColor;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+
+        // Title Text
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+
+        const textX = barX + barW + 16;
+        titleLines.forEach((line, idx) => {
+          ctx.fillText(line, textX, contentY + (idx * titleLineHeight));
+        });
+
+        contentY += (titleLines.length * titleLineHeight) + 32;
+        ctx.restore();
+      }
+
+      // 4. Body Paragraph (wrapTextLines)
+      if (state.bodyDesc.trim()) {
+        ctx.save();
+        const descFontSize = state.bodyDescSize;
+        ctx.font = `500 ${descFontSize}px "Pretendard", -apple-system, sans-serif`;
+        const descLineHeight = Math.round(descFontSize * state.bodyLineHeight);
+        const wrappedDescLines = wrapTextLines(ctx, state.bodyDesc, maxContentW);
+
+        ctx.fillStyle = state.bodyDescColor;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 1;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+
+        wrappedDescLines.forEach((line) => {
+          if (line === '') {
+            contentY += descLineHeight * 0.5;
+          } else {
+            ctx.fillText(line, contentX, contentY);
+            contentY += descLineHeight;
+          }
+        });
+
+        contentY += 28;
+        ctx.restore();
+      }
+
+      // 5. Quote / Callout Box
+      if (state.showBodyQuote && state.bodyQuote.trim()) {
+        ctx.save();
+        const quoteFontSize = Math.round(state.bodyDescSize * 0.95);
+        ctx.font = `600 ${quoteFontSize}px "Pretendard", -apple-system, sans-serif`;
+        const quoteLineH = Math.round(quoteFontSize * 1.5);
+        const quoteLines = wrapTextLines(ctx, state.bodyQuote, maxContentW - 54);
+
+        const quoteBoxPadX = 24;
+        const quoteBoxPadY = 18;
+        const hasAuthor = Boolean(state.bodyQuoteAuthor && state.bodyQuoteAuthor.trim());
+        const authorLineH = hasAuthor ? 28 : 0;
+        const quoteBoxH = (quoteLines.length * quoteLineH) + (quoteBoxPadY * 2) + authorLineH;
+
+        // Container Box
+        ctx.beginPath();
+        ctx.roundRect(contentX, contentY, maxContentW, quoteBoxH, 16);
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.12)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 3;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Left Accent Strip
+        ctx.beginPath();
+        ctx.roundRect(contentX, contentY, 5, quoteBoxH, [16, 0, 0, 16]);
+        ctx.fillStyle = state.bodyAccentColor;
+        ctx.fill();
+
+        // Quote Text
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 1;
+        ctx.fillStyle = '#fef08a'; // Soft amber/yellow
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+
+        let curQY = contentY + quoteBoxPadY + (quoteFontSize * 0.85);
+        quoteLines.forEach((qLine) => {
+          ctx.fillText(qLine, contentX + quoteBoxPadX + 6, curQY);
+          curQY += quoteLineH;
+        });
+
+        // Author / Source
+        if (hasAuthor) {
+          ctx.font = `500 ${Math.round(quoteFontSize * 0.82)}px "Pretendard", -apple-system, sans-serif`;
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(state.bodyQuoteAuthor, contentX + quoteBoxPadX + 6, curQY + 6);
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // ==========================================
+    // 3. ENDING TEMPLATE OVERLAY (마무리 엔딩)
+    // ==========================================
+    function renderEndingOverlay(ctx, marginX, marginY) {
+      ctx.save();
+      const endingPreset = state.endingDesignPreset || 'social-action';
+
+      // ==========================================
+      // [Ending Style 2] 저장 유도형 (Save Reminder)
+      // ==========================================
+      if (endingPreset === 'save-reminder') {
+        let curY = 100;
+
+        // 1. Top Mini Badge
+        ctx.font = '700 20px "Pretendard", -apple-system, sans-serif';
+        const tagText = '📌 SAVE THIS POST';
+        const tagMetrics = ctx.measureText(tagText);
+        const tagPadX = 18;
+        const tagPadY = 8;
+        const tagW = tagMetrics.width + (tagPadX * 2);
+        const tagH = 20 + (tagPadY * 2);
+        const tagX = (state.width - tagW) / 2;
+
+        ctx.beginPath();
+        ctx.roundRect(tagX, curY, tagW, tagH, tagH / 2);
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.25)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 2;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tagText, state.width / 2, curY + (tagH / 2));
+        curY += tagH + 34;
+
+        // 2. Hooking Subtitle
+        if (state.endSaveHook && state.endSaveHook.trim()) {
+          ctx.font = '600 28px "Pretendard", -apple-system, sans-serif';
+          ctx.fillStyle = '#cbd5e1';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+          ctx.shadowBlur = 8;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(state.endSaveHook, state.width / 2, curY);
+          curY += 46;
+        }
+
+        // 3. Large Bookmark Highlight Graphic Card
+        const cardW = Math.min(state.width - (marginX * 2), 820);
+        const cardX = (state.width - cardW) / 2;
+        const cardH = 340;
+
+        ctx.beginPath();
+        ctx.roundRect(cardX, curY, cardW, cardH, 32);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+        ctx.shadowBlur = 24;
+        ctx.shadowOffsetY = 8;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Bookmark Icon Illustration (Stylized 3D-like Ribbon)
+        const iconCenterY = curY + 76;
+        ctx.font = '64px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(245, 158, 11, 0.5)';
+        ctx.shadowBlur = 18;
+        ctx.fillText('📌', state.width / 2, iconCenterY);
+
+        // Bookmark Card Title
+        ctx.font = '900 42px "Pretendard", -apple-system, sans-serif';
+        ctx.fillStyle = '#fef08a';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowBlur = 14;
+        ctx.shadowOffsetY = 3;
+        ctx.fillText(state.endSaveCardTitle || '나중에 다시 보려면 꼭 [저장 📌]', state.width / 2, iconCenterY + 84);
+
+        // Bookmark Card Desc
+        ctx.font = '500 23px "Pretendard", -apple-system, sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 6;
+        ctx.fillText(state.endSaveCardDesc || '필요할 때 헤매지 않고 내 보관함에서 바로 꺼내보세요!', state.width / 2, iconCenterY + 138);
+
+        curY += cardH + 46;
+
+        // 4. Sub CTA Profile Link Card
+        if (state.endSaveSubCta && state.endSaveSubCta.trim()) {
+          const ctaW = cardW;
+          const ctaH = 80;
+          ctx.beginPath();
+          ctx.roundRect(cardX, curY, ctaW, ctaH, ctaH / 2);
+          ctx.fillStyle = state.bodyAccentColor || '#6366f1';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+          ctx.shadowBlur = 16;
+          ctx.shadowOffsetY = 4;
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          ctx.font = '700 24px "Pretendard", -apple-system, sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(state.endSaveSubCta, state.width / 2, curY + (ctaH / 2));
+        }
+
+        // 5. Bottom Account / Footer
+        if (state.showEndFooter && state.endHandle.trim()) {
+          ctx.font = '500 21px "Pretendard", -apple-system, sans-serif';
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+          ctx.shadowBlur = 6;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(state.endHandle, state.width / 2, state.height - 42);
+        }
+
+        ctx.restore();
+        return;
+      }
+
+      // ==========================================
+      // [Ending Style 3] 다음 편 예고 (Series Next Preview)
+      // ==========================================
+      if (endingPreset === 'series-next') {
+        let curY = 96;
+
+        // 1. Top Teaser Badge
+        ctx.font = '800 20px "Pretendard", -apple-system, sans-serif';
+        const badgeText = state.endNextBadge || 'NEXT ISSUE PREVIEW · 다음 편 예고';
+        const bMetrics = ctx.measureText(badgeText);
+        const bPadX = 20;
+        const bPadY = 9;
+        const bW = bMetrics.width + (bPadX * 2);
+        const bH = 20 + (bPadY * 2);
+        const bX = (state.width - bW) / 2;
+
+        ctx.beginPath();
+        ctx.roundRect(bX, curY, bW, bH, bH / 2);
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 2;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(badgeText, state.width / 2, curY + (bH / 2));
+        curY += bH + 40;
+
+        // 2. Main Question / Headline
+        if (state.endTitle && state.endTitle.trim()) {
+          ctx.font = `800 ${Math.min(state.endTitleSize, 48)}px ${state.endTitleFont}`;
+          ctx.fillStyle = state.endTitleColor || '#ffffff';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+          ctx.shadowBlur = 16;
+          ctx.shadowOffsetY = 3;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+
+          const tLines = state.endTitle.split('\n');
+          const tLineH = Math.min(state.endTitleSize, 48) * 1.25;
+          tLines.forEach((line, idx) => {
+            ctx.fillText(line, state.width / 2, curY + (idx * tLineH));
+          });
+          curY += (tLines.length * tLineH) + 36;
+        }
+
+        // 3. Series Teaser Preview Card
+        const cardW = Math.min(state.width - (marginX * 2), 820);
+        const cardX = (state.width - cardW) / 2;
+        const cardH = 240;
+
+        ctx.beginPath();
+        ctx.roundRect(cardX, curY, cardW, cardH, 28);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetY = 6;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // Left Accent Strip
+        ctx.beginPath();
+        ctx.roundRect(cardX, curY, 6, cardH, [28, 0, 0, 28]);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fill();
+
+        // Inside Preview Content
+        ctx.font = '700 18px "Pretendard", -apple-system, sans-serif';
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('NEXT EPISODE PREVIEW', cardX + 36, curY + 44);
+
+        ctx.font = '800 28px "Pretendard", -apple-system, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        const nextTitleLines = wrapTextLines(ctx, state.endNextTitle || 'VOL. 02 ➔ AI 에이전트로 10배 빠른 콘텐츠 기획하기', cardW - 72);
+        let nY = curY + 92;
+        nextTitleLines.slice(0, 2).forEach((ntLine) => {
+          ctx.fillText(ntLine, cardX + 36, nY);
+          nY += 36;
+        });
+
+        // Date Notice
+        ctx.font = '600 20px "Pretendard", -apple-system, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(state.endNextDate || '📅 다음 주 목요일 저녁 7시 정식 발행', cardX + 36, curY + cardH - 38);
+
+        curY += cardH + 34;
+
+        // 4. Interactive Feedback Notice Box
+        if (state.endNextNotice && state.endNextNotice.trim()) {
+          const noticeH = 76;
+          ctx.beginPath();
+          ctx.roundRect(cardX, curY, cardW, noticeH, 20);
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.font = '600 22px "Pretendard", -apple-system, sans-serif';
+          ctx.fillStyle = '#fef08a';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(state.endNextNotice, state.width / 2, curY + (noticeH / 2));
+        }
+
+        // 5. Bottom Account / Footer
+        if (state.showEndFooter && state.endHandle.trim()) {
+          ctx.font = '500 21px "Pretendard", -apple-system, sans-serif';
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+          ctx.shadowBlur = 6;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(state.endHandle, state.width / 2, state.height - 42);
+        }
+
+        ctx.restore();
+        return;
+      }
+
+      // ==========================================
+      // [Ending Style 1] 소셜 액션형 (기본 4-Bar + CTA)
+      // ==========================================
+      // 1. Top Ending Badge
+      let startY = 110;
+      if (state.showEndTag && state.endTag.trim()) {
+        ctx.font = '700 22px "Pretendard", -apple-system, sans-serif';
+        const tagMetrics = ctx.measureText(state.endTag);
+        const tagPadX = 20;
+        const tagPadY = 10;
+        const tagW = tagMetrics.width + (tagPadX * 2);
+        const tagH = 22 + (tagPadY * 2);
+        const tagX = (state.width - tagW) / 2;
+        const tagY = startY;
+
+        ctx.beginPath();
+        ctx.roundRect(tagX, tagY, tagW, tagH, tagH / 2);
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.25)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 2;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.55)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(state.endTag, state.width / 2, tagY + (tagH / 2));
+
+        startY += tagH + 48;
+      } else {
+        startY += 20;
+      }
+
+      // 2. Question / Hooking Main Headline (Center Aligned)
+      if (state.endTitle.trim()) {
+        const titleFontSize = state.endTitleSize;
+        ctx.font = `800 ${titleFontSize}px ${state.endTitleFont}`;
+        const titleLines = state.endTitle.split('\n');
+        const titleLineHeight = titleFontSize * 1.25;
+
+        ctx.fillStyle = state.endTitleColor;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowBlur = 18;
+        ctx.shadowOffsetY = 4;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+
+        titleLines.forEach((line, idx) => {
+          ctx.fillText(line, state.width / 2, startY + (idx * titleLineHeight));
+        });
+
+        startY += (titleLines.length * titleLineHeight) + 40;
+      }
+
+      // 3. Summary & Invitation Text
+      if (state.endDesc.trim()) {
+        const descFontSize = state.endDescSize;
+        ctx.font = `500 ${descFontSize}px "Pretendard", -apple-system, sans-serif`;
+        const descLineHeight = Math.round(descFontSize * 1.55);
+        const wrappedLines = wrapTextLines(ctx, state.endDesc, state.width - (marginX * 2) - 80);
+
+        ctx.fillStyle = 'rgba(226, 232, 240, 0.95)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+
+        wrappedLines.forEach((line) => {
+          if (line === '') {
+            startY += descLineHeight * 0.4;
+          } else {
+            ctx.fillText(line, state.width / 2, startY);
+            startY += descLineHeight;
+          }
+        });
+      }
+
+      // 4. Action Elements (Instagram 4-Bar and/or Wide CTA Button)
+      const actionStyle = state.endActionStyle; // 'insta', 'cta', 'both'
+      const showInsta = actionStyle === 'insta' || actionStyle === 'both';
+      const showCta = actionStyle === 'cta' || actionStyle === 'both';
+
+      const barW = Math.min(state.width - (marginX * 2), 760);
+      const barX = (state.width - barW) / 2;
+
+      if (actionStyle === 'both') {
+        const instaY = state.height - 290;
+        drawInstagramActionBar(ctx, barX, instaY, barW, 94);
+
+        const ctaY = state.height - 170;
+        drawWideCtaButton(ctx, barX, ctaY, barW, 74);
+      } else if (showInsta) {
+        const instaY = state.height - 210;
+        drawInstagramActionBar(ctx, barX, instaY, barW, 102);
+      } else if (showCta) {
+        const ctaY = state.height - 200;
+        drawWideCtaButton(ctx, barX, ctaY, barW, 78);
+      }
+
+      // 5. Bottom Account / Footer
+      if (state.showEndFooter && state.endHandle.trim()) {
+        ctx.save();
+        ctx.font = '500 21px "Pretendard", -apple-system, sans-serif';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 6;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(state.endHandle, state.width / 2, state.height - 42);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    // Helper: Draw Instagram 4-Action Bar (Like, Comment, Share, Save)
+    function drawInstagramActionBar(ctx, x, y, width, height) {
+      ctx.save();
+      // Glass Bar Container
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, 22);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 4;
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      const items = [
+        { icon: '❤️', label: '좋아요' },
+        { icon: '💬', label: '댓글달기' },
+        { icon: '↗️', label: '공유하기' },
+        { icon: '📌', label: '저장하기' }
+      ];
+
+      const colW = width / 4;
+      items.forEach((item, i) => {
+        const itemCenterX = x + (i * colW) + (colW / 2);
+
+        // Icon
+        ctx.font = '28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item.icon, itemCenterX, y + 34);
+
+        // Label
+        ctx.font = '600 15px "Pretendard", -apple-system, sans-serif';
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillText(item.label, itemCenterX, y + 68);
+
+        // Subtle divider between columns
+        if (i < 3) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          ctx.beginPath();
+          ctx.moveTo(x + ((i + 1) * colW), y + 20);
+          ctx.lineTo(x + ((i + 1) * colW), y + height - 20);
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+    }
+
+    // Helper: Draw Wide Pill CTA Button
+    function drawWideCtaButton(ctx, x, y, width, height) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, height / 2);
+      ctx.fillStyle = state.endCtaColor;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowBlur = 16;
+      ctx.shadowOffsetY = 4;
+      ctx.fill();
+
+      // Subtle light border
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // CTA Text
+      ctx.font = '700 24px "Pretendard", -apple-system, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 1;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(state.endCtaText, x + (width / 2), y + (height / 2));
+      ctx.restore();
+    }
+
+    // Two-way bindings for Photo & Transform Controls
+    bindSliderAndNumber({
+      slider: inputs.zoomSlider,
+      numberInput: inputs.zoomInput,
+      decimals: 1,
+      min: 0.5,
+      max: 3.0,
+      onUpdate: (val) => { state.zoom = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.panXSlider,
+      numberInput: inputs.panXInput,
+      decimals: 0,
+      min: -500,
+      max: 500,
+      onUpdate: (val) => { state.panX = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.panYSlider,
+      numberInput: inputs.panYInput,
+      decimals: 0,
+      min: -500,
+      max: 500,
+      onUpdate: (val) => { state.panY = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.brightSlider,
+      numberInput: inputs.brightInput,
+      decimals: 0,
+      min: 40,
+      max: 160,
+      onUpdate: (val) => { state.brightness = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.contrastSlider,
+      numberInput: inputs.contrastInput,
+      decimals: 0,
+      min: 40,
+      max: 160,
+      onUpdate: (val) => { state.contrast = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.saturateSlider,
+      numberInput: inputs.saturateInput,
+      decimals: 0,
+      min: 0,
+      max: 200,
+      onUpdate: (val) => { state.saturate = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.blurSlider,
+      numberInput: inputs.blurInput,
+      decimals: 1,
+      min: 0,
+      max: 25,
+      onUpdate: (val) => { state.blur = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.vignetteSlider,
+      numberInput: inputs.vignetteInput,
+      decimals: 0,
+      min: 0,
+      max: 90,
+      onUpdate: (val) => { state.vignette = val; renderCanvas(); }
+    });
+
+    inputs.tintColorPicker.addEventListener('input', (e) => {
+      state.tintColor = e.target.value;
+      renderCanvas();
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.tintOpacitySlider,
+      numberInput: inputs.tintOpacityInput,
+      decimals: 0,
+      min: 0,
+      max: 80,
+      onUpdate: (val) => { state.tintOpacity = val; renderCanvas(); }
+    });
+
+    // Flip Buttons
+    inputs.flipHBtn.addEventListener('click', () => {
+      state.flipH = !state.flipH;
+      inputs.flipHBtn.classList.toggle('bg-indigo-600', state.flipH);
+      inputs.flipHBtn.classList.toggle('text-white', state.flipH);
+      inputs.flipHBtn.classList.toggle('bg-slate-800', !state.flipH);
+      renderCanvas();
+    });
+
+    inputs.flipVBtn.addEventListener('click', () => {
+      state.flipV = !state.flipV;
+      inputs.flipVBtn.classList.toggle('bg-indigo-600', state.flipV);
+      inputs.flipVBtn.classList.toggle('text-white', state.flipV);
+      inputs.flipVBtn.classList.toggle('bg-slate-800', !state.flipV);
+      renderCanvas();
+    });
+
+    // Helper to update all filter UI sliders to match state
+    function syncPhotoFilterSliders() {
+      inputs.brightSlider.value = state.brightness;
+      if (inputs.brightInput) inputs.brightInput.value = state.brightness;
+      inputs.contrastSlider.value = state.contrast;
+      if (inputs.contrastInput) inputs.contrastInput.value = state.contrast;
+      inputs.saturateSlider.value = state.saturate;
+      if (inputs.saturateInput) inputs.saturateInput.value = state.saturate;
+      inputs.blurSlider.value = state.blur;
+      if (inputs.blurInput) inputs.blurInput.value = state.blur;
+      inputs.vignetteSlider.value = state.vignette;
+      if (inputs.vignetteInput) inputs.vignetteInput.value = state.vignette;
+      inputs.tintOpacitySlider.value = state.tintOpacity;
+      if (inputs.tintOpacityInput) inputs.tintOpacityInput.value = state.tintOpacity;
+      inputs.tintColorPicker.value = state.tintColor;
+    }
+
+    // Photo Filters Reset Button
+    inputs.resetPhotoFiltersBtn.addEventListener('click', () => {
+      state.brightness = 100;
+      state.contrast = 100;
+      state.saturate = 100;
+      state.blur = 0;
+      state.vignette = 0;
+      state.tintOpacity = 0;
+      state.flipH = false;
+      state.flipV = false;
+      state.filterPreset = 'normal';
+
+      inputs.flipHBtn.classList.remove('bg-indigo-600', 'text-white');
+      inputs.flipHBtn.classList.add('bg-slate-800');
+      inputs.flipVBtn.classList.remove('bg-indigo-600', 'text-white');
+      inputs.flipVBtn.classList.add('bg-slate-800');
+
+      document.querySelectorAll('.filter-preset-btn').forEach(b => {
+        const isDefault = b.dataset.filter === 'normal';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/10', isDefault);
+        b.classList.toggle('text-indigo-300', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+
+      syncPhotoFilterSliders();
+      renderCanvas();
+      showToast('사진 보정 및 필터 효과가 리셋되었습니다.');
+    });
+
+    // 1-Click Mood Filter Preset Buttons
+    document.querySelectorAll('.filter-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-preset-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+
+        const filter = btn.dataset.filter;
+        state.filterPreset = filter;
+
+        if (filter === 'normal') {
+          state.brightness = 100;
+          state.contrast = 100;
+          state.saturate = 100;
+          state.blur = 0;
+          state.vignette = 0;
+          state.tintOpacity = 0;
+        } else if (filter === 'cinematic') {
+          state.brightness = 88;
+          state.contrast = 125;
+          state.saturate = 85;
+          state.vignette = 35;
+          state.tintColor = '#0f172a';
+          state.tintOpacity = 15;
+        } else if (filter === 'mono') {
+          state.brightness = 98;
+          state.contrast = 125;
+          state.saturate = 0;
+          state.vignette = 20;
+          state.tintOpacity = 0;
+        } else if (filter === 'vivid') {
+          state.brightness = 102;
+          state.contrast = 115;
+          state.saturate = 140;
+          state.vignette = 0;
+          state.tintOpacity = 0;
+        } else if (filter === 'vintage') {
+          state.brightness = 95;
+          state.contrast = 108;
+          state.saturate = 88;
+          state.vignette = 30;
+          state.tintColor = '#78350f';
+          state.tintOpacity = 15;
+        } else if (filter === 'matte') {
+          state.brightness = 106;
+          state.contrast = 88;
+          state.saturate = 92;
+          state.vignette = 20;
+          state.tintColor = '#1e293b';
+          state.tintOpacity = 10;
+        }
+
+        syncPhotoFilterSliders();
+        renderCanvas();
+      });
+    });
+
+    inputs.creditText.addEventListener('input', (e) => {
+      state.credit = e.target.value;
+      renderCanvas();
+    });
+
+    inputs.showCredit.addEventListener('change', (e) => {
+      state.showCredit = e.target.checked;
+      renderCanvas();
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.creditSizeSlider,
+      numberInput: inputs.creditSizeInput,
+      decimals: 0,
+      min: 14,
+      max: 32,
+      onUpdate: (val) => { state.creditSize = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.creditOpacitySlider,
+      numberInput: inputs.creditOpacityInput,
+      decimals: 0,
+      min: 40,
+      max: 100,
+      onUpdate: (val) => { state.creditOpacity = val; renderCanvas(); }
+    });
+
+    document.querySelectorAll('.credit-pos-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.creditPos = btn.dataset.creditPos;
+        updateCreditControlsUI();
+        renderCanvas();
+      });
+    });
+
+    document.querySelectorAll('.credit-style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.creditStyle = btn.dataset.creditStyle;
+        updateCreditControlsUI();
+        renderCanvas();
+      });
+    });
+
+    document.querySelectorAll('.credit-prefix-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const prefix = btn.dataset.prefix;
+        if (inputs.creditText) {
+          let val = inputs.creditText.value.replace(/^(사진|출처|자료|취재|그래픽|배경 이미지):\s*/, '');
+          inputs.creditText.value = prefix + val;
+          state.credit = inputs.creditText.value;
+          renderCanvas();
+        }
+      });
+    });
+
+    function updateCreditControlsUI() {
+      document.querySelectorAll('.credit-pos-btn').forEach(btn => {
+        const isSelected = btn.dataset.creditPos === (state.creditPos || 'top-left');
+        btn.className = `credit-pos-btn px-1.5 py-1.5 rounded-lg border text-[10px] font-medium transition-all text-center ${
+          isSelected
+            ? 'border-indigo-500 bg-indigo-500/20 text-white font-bold'
+            : 'border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800'
+        }`;
+      });
+
+      document.querySelectorAll('.credit-style-btn').forEach(btn => {
+        const isSelected = btn.dataset.creditStyle === (state.creditStyle || 'minimal');
+        btn.className = `credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium transition-all text-center ${
+          isSelected
+            ? 'border-indigo-500 bg-indigo-500/20 text-white font-bold'
+            : 'border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800'
+        }`;
+      });
+    }
+
+    inputs.headlineText.addEventListener('input', (e) => {
+      state.headline = e.target.value;
+      renderCanvas();
+    });
+
+    inputs.headlineFontSelect.addEventListener('change', (e) => {
+      state.headlineFont = e.target.value;
+      renderCanvas();
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.headlineOffsetY,
+      numberInput: inputs.headlineOffsetYInput,
+      decimals: 0,
+      min: -250,
+      max: 250,
+      onUpdate: (val) => { state.headlineOffsetY = val; renderCanvas(); }
+    });
+
+    inputs.headlineColorPicker.addEventListener('input', (e) => {
+      state.headlineColor = e.target.value;
+      inputs.headlineColorHex.textContent = e.target.value.toUpperCase();
+      document.querySelectorAll('#headlineColorPresets button').forEach(b => {
+        const isSelected = b.dataset.color.toLowerCase() === state.headlineColor.toLowerCase();
+        b.classList.toggle('ring-2', isSelected);
+        b.classList.toggle('ring-indigo-500', isSelected);
+        b.classList.toggle('ring-offset-1', isSelected);
+        b.classList.toggle('ring-offset-slate-900', isSelected);
+      });
+      renderCanvas();
+    });
+
+    // Headline Preset Colors
+    document.querySelectorAll('#headlineColorPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        state.headlineColor = color;
+        inputs.headlineColorPicker.value = color;
+        inputs.headlineColorHex.textContent = color.toUpperCase();
+        document.querySelectorAll('#headlineColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-1', 'ring-offset-slate-900');
+        renderCanvas();
+      });
+    });
+
+    // Headline Alignment Buttons
+    document.querySelectorAll('.hl-align-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.hl-align-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.headlineAlign = btn.dataset.align;
+        renderCanvas();
+      });
+    });
+
+    // Headline Vertical Position Buttons
+    document.querySelectorAll('.hl-vpos-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.hl-vpos-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.headlineVPos = btn.dataset.vpos;
+        renderCanvas();
+      });
+    });
+
+    // Headline Style Buttons (soft-shadow, deep-shadow, stroke, box)
+    document.querySelectorAll('.hl-style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.hl-style-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.headlineStyle = btn.dataset.style;
+        renderCanvas();
+      });
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.headlineSize,
+      numberInput: inputs.headlineSizeInput,
+      decimals: 0,
+      min: 36,
+      max: 120,
+      onUpdate: (val) => { state.headlineSize = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.headlineLineHeight,
+      numberInput: inputs.headlineLineHeightInput,
+      decimals: 2,
+      min: 0.8,
+      max: 2.0,
+      onUpdate: (val) => { state.headlineLineHeight = val; renderCanvas(); }
+    });
+
+    // Subtitle Controls
+    inputs.subtitleText.addEventListener('input', (e) => {
+      state.subtitle = e.target.value;
+      renderCanvas();
+    });
+
+    inputs.showSubtitle.addEventListener('change', (e) => {
+      state.showSubtitle = e.target.checked;
+      inputs.subControlPanel.style.opacity = state.showSubtitle ? '1' : '0.35';
+      inputs.subControlPanel.style.pointerEvents = state.showSubtitle ? 'auto' : 'none';
+      renderCanvas();
+    });
+
+    inputs.subFontSelect.addEventListener('change', (e) => {
+      state.subFont = e.target.value;
+      renderCanvas();
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.subSize,
+      numberInput: inputs.subSizeInput,
+      decimals: 0,
+      min: 14,
+      max: 72,
+      onUpdate: (val) => { state.subSize = val; renderCanvas(); }
+    });
+
+    // Subtitle Position Mode Buttons
+    document.querySelectorAll('.sub-pos-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sub-pos-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.subPosition = btn.dataset.subpos;
+        renderCanvas();
+      });
+    });
+
+    // Subtitle Custom Color Picker
+    inputs.subColorPicker.addEventListener('input', (e) => {
+      state.subTextColor = e.target.value;
+      inputs.subTextColorHex.textContent = e.target.value.toUpperCase();
+      document.querySelectorAll('#subColorPresets button').forEach(b => {
+        b.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1', 'ring-offset-slate-900');
+      });
+      renderCanvas();
+    });
+
+    // Subtitle Color Preset Buttons
+    document.querySelectorAll('#subColorPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#subColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-1', 'ring-offset-slate-900');
+        state.subTextColor = btn.dataset.subcolor;
+        inputs.subColorPicker.value = btn.dataset.subcolor;
+        inputs.subTextColorHex.textContent = btn.dataset.subcolor.toUpperCase();
+        renderCanvas();
+      });
+    });
+
+    inputs.badgeText.addEventListener('input', (e) => {
+      state.badge = e.target.value;
+      renderCanvas();
+    });
+
+    inputs.showBadge.addEventListener('change', (e) => {
+      state.showBadge = e.target.checked;
+      inputs.badgeControlPanel.style.opacity = state.showBadge ? '1' : '0.35';
+      inputs.badgeControlPanel.style.pointerEvents = state.showBadge ? 'auto' : 'none';
+      renderCanvas();
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.badgeSize,
+      numberInput: inputs.badgeSizeInput,
+      decimals: 0,
+      min: 14,
+      max: 64,
+      onUpdate: (val) => { state.badgeSize = val; renderCanvas(); }
+    });
+
+    inputs.badgeColorPicker.addEventListener('input', (e) => {
+      state.badgeBgColor = e.target.value;
+      inputs.badgeColorHex.textContent = e.target.value.toUpperCase();
+      document.querySelectorAll('#badgeColorPresets button').forEach(b => {
+        const isSelected = b.dataset.color.toLowerCase() === state.badgeBgColor.toLowerCase();
+        b.classList.toggle('ring-2', isSelected);
+        b.classList.toggle('ring-white', isSelected);
+        b.classList.toggle('ring-offset-2', isSelected);
+        b.classList.toggle('ring-offset-slate-900', isSelected);
+      });
+      renderCanvas();
+    });
+
+    // Preset color buttons
+    document.querySelectorAll('#badgeColorPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        state.badgeBgColor = color;
+        inputs.badgeColorPicker.value = color;
+        inputs.badgeColorHex.textContent = color.toUpperCase();
+        document.querySelectorAll('#badgeColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        renderCanvas();
+      });
+    });
+
+    // Badge Position Buttons
+    document.querySelectorAll('.badge-pos-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.badge-pos-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.badgePosition = btn.dataset.pos;
+        renderCanvas();
+      });
+    });
+
+    // Badge Style Buttons (Solid, Outline, Glass)
+    document.querySelectorAll('.badge-style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.badge-style-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.badgeStyle = btn.dataset.style;
+        renderCanvas();
+      });
+    });
+
+    // Badge Radius Buttons (Pill, Rounded, Square)
+    document.querySelectorAll('.badge-radius-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.badge-radius-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.badgeRadius = btn.dataset.radius;
+        renderCanvas();
+      });
+    });
+
+    // Badge Text Color Buttons (White vs Black)
+    document.querySelectorAll('.badge-textcolor-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.badge-textcolor-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/20', 'text-white');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/20', 'text-white');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.badgeTextColor = btn.dataset.textcolor;
+        renderCanvas();
+      });
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.gradIntensity,
+      numberInput: inputs.gradIntensityInput,
+      decimals: 0,
+      min: 0,
+      max: 100,
+      onUpdate: (val) => { state.gradIntensity = val / 100; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.gradHeight,
+      numberInput: inputs.gradHeightInput,
+      decimals: 0,
+      min: 10,
+      max: 95,
+      onUpdate: (val) => { state.gradHeight = val / 100; renderCanvas(); }
+    });
+
+    // Readability Shadow Custom Color Picker
+    inputs.gradColorPicker.addEventListener('input', (e) => {
+      state.gradColor = e.target.value;
+      inputs.gradColorHex.textContent = e.target.value.toUpperCase();
+      document.querySelectorAll('#gradColorPresets button').forEach(b => {
+        b.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1', 'ring-offset-slate-900');
+      });
+      renderCanvas();
+    });
+
+    // Readability Shadow Color Preset Buttons
+    document.querySelectorAll('#gradColorPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#gradColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-1', 'ring-offset-slate-900');
+        state.gradColor = btn.dataset.gradcolor;
+        inputs.gradColorPicker.value = btn.dataset.gradcolor;
+        inputs.gradColorHex.textContent = btn.dataset.gradcolor.toUpperCase();
+        renderCanvas();
+      });
+    });
+
+    // ==========================================
+    // 0. Template Mode Switcher (Cover, Body, Ending)
+    // ==========================================
+    document.querySelectorAll('.template-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.template-tab-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/20', 'text-white', 'shadow-sm');
+          b.classList.add('border-transparent', 'bg-transparent', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/20', 'text-white', 'shadow-sm');
+        btn.classList.remove('border-transparent', 'bg-transparent', 'text-slate-400');
+
+        const mode = btn.dataset.template;
+        state.templateMode = mode;
+        if (typeof pages !== 'undefined' && pages[activePageIndex]) {
+          pages[activePageIndex].templateMode = mode;
+          if (typeof updateSlideBar === 'function') updateSlideBar();
+        }
+
+        if (mode === 'cover') {
+          currentTemplateBadge.textContent = '표지 (Cover)';
+          currentTemplateBadge.className = 'text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+          panelModeBadge.textContent = '표지 모드';
+          panelModeBadge.className = 'text-[10px] text-indigo-400 font-semibold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20';
+        } else if (mode === 'body') {
+          currentTemplateBadge.textContent = '본문 (Content)';
+          currentTemplateBadge.className = 'text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+          panelModeBadge.textContent = '본문 모드';
+          panelModeBadge.className = 'text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20';
+        } else if (mode === 'ending') {
+          currentTemplateBadge.textContent = '마무리 (Outro)';
+          currentTemplateBadge.className = 'text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+          panelModeBadge.textContent = '마무리 모드';
+          panelModeBadge.className = 'text-[10px] text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20';
+        }
+
+        coverConfigPanel.classList.toggle('hidden', mode !== 'cover');
+        bodyConfigPanel.classList.toggle('hidden', mode !== 'body');
+        endingConfigPanel.classList.toggle('hidden', mode !== 'ending');
+
+        renderCanvas();
+        showToast(`${btn.innerText.trim()} 템플릿으로 전환되었습니다.`);
+      });
+    });
+
+    // ==========================================
+    // 1-B. Cover Design Style Event Listeners
+    // ==========================================
+    document.querySelectorAll('.cover-style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cover-style-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+
+        state.coverDesignPreset = btn.dataset.coverStyle;
+        const labels = {
+          'editorial': '에디토리얼',
+          'magazine-frame': '매거진 프레임',
+          'sticker-bold': '스티커 팁'
+        };
+        if (inputs.coverStyleLabel) inputs.coverStyleLabel.textContent = labels[state.coverDesignPreset] || '에디토리얼';
+        if (inputs.coverMagazineOptions) inputs.coverMagazineOptions.classList.toggle('hidden', state.coverDesignPreset !== 'magazine-frame');
+        if (inputs.coverStickerOptions) inputs.coverStickerOptions.classList.toggle('hidden', state.coverDesignPreset !== 'sticker-bold');
+        renderCanvas();
+      });
+    });
+
+    // 매거진 프레임 서브 옵션 리스너
+    if (inputs.coverIssueTagText) {
+      inputs.coverIssueTagText.addEventListener('input', (e) => {
+        state.coverIssueTag = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.coverCuratorText) {
+      inputs.coverCuratorText.addEventListener('input', (e) => {
+        state.coverCurator = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.coverFrameColorPicker) {
+      inputs.coverFrameColorPicker.addEventListener('input', (e) => {
+        state.coverFrameColor = e.target.value;
+        document.querySelectorAll('#coverFrameColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-slate-900');
+        });
+        renderCanvas();
+      });
+    }
+    document.querySelectorAll('#coverFrameColorPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        state.coverFrameColor = color;
+        if (inputs.coverFrameColorPicker) inputs.coverFrameColorPicker.value = color;
+        document.querySelectorAll('#coverFrameColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-slate-900');
+        renderCanvas();
+      });
+    });
+
+    // 스티커 팁 서브 옵션 리스너
+    if (inputs.coverStickerNumberText) {
+      inputs.coverStickerNumberText.addEventListener('input', (e) => {
+        state.coverStickerNumber = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.coverStickerCategoryText) {
+      inputs.coverStickerCategoryText.addEventListener('input', (e) => {
+        state.coverStickerCategory = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.coverStickerSubText) {
+      inputs.coverStickerSubText.addEventListener('input', (e) => {
+        state.coverStickerSub = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.coverStickerColorPicker) {
+      inputs.coverStickerColorPicker.addEventListener('input', (e) => {
+        state.coverStickerColor = e.target.value;
+        document.querySelectorAll('#coverStickerPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-slate-900');
+        });
+        renderCanvas();
+      });
+    }
+    document.querySelectorAll('#coverStickerPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        state.coverStickerColor = color;
+        if (inputs.coverStickerColorPicker) inputs.coverStickerColorPicker.value = color;
+        document.querySelectorAll('#coverStickerPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-slate-900');
+        renderCanvas();
+      });
+    });
+
+    // ==========================================
+    // 2-B. Body Template Event Listeners
+    // ==========================================
+    if (inputs.showBodyTopBar) {
+      inputs.showBodyTopBar.addEventListener('change', (e) => {
+        state.showBodyTopBar = e.target.checked;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.bodyCategoryText) {
+      inputs.bodyCategoryText.addEventListener('input', (e) => {
+        state.bodyCategory = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.bodyPageText) {
+      inputs.bodyPageText.addEventListener('input', (e) => {
+        state.bodyPage = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    document.querySelectorAll('.body-card-style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.body-card-style-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.bodyCardStyle = btn.dataset.style;
+
+        const labels = {
+          'glass': '글래스 모피즘',
+          'step': '3단 체크리스트',
+          'split': '감성 분할 스토리'
+        };
+        if (inputs.bodyStyleLabel) inputs.bodyStyleLabel.textContent = labels[state.bodyCardStyle] || '글래스 모피즘';
+        if (inputs.bodyStepOptions) inputs.bodyStepOptions.classList.toggle('hidden', state.bodyCardStyle !== 'step');
+        renderCanvas();
+      });
+    });
+
+    // 3단 체크리스트 서브 옵션 리스너
+    if (inputs.bodyStepBadgeText) {
+      inputs.bodyStepBadgeText.addEventListener('input', (e) => {
+        state.bodyStepBadge = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.bodyItem1TitleText) {
+      inputs.bodyItem1TitleText.addEventListener('input', (e) => {
+        state.bodyItem1Title = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.bodyItem1DescText) {
+      inputs.bodyItem1DescText.addEventListener('input', (e) => {
+        state.bodyItem1Desc = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.bodyItem2TitleText) {
+      inputs.bodyItem2TitleText.addEventListener('input', (e) => {
+        state.bodyItem2Title = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.bodyItem2DescText) {
+      inputs.bodyItem2DescText.addEventListener('input', (e) => {
+        state.bodyItem2Desc = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.bodyItem3TitleText) {
+      inputs.bodyItem3TitleText.addEventListener('input', (e) => {
+        state.bodyItem3Title = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.bodyItem3DescText) {
+      inputs.bodyItem3DescText.addEventListener('input', (e) => {
+        state.bodyItem3Desc = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    bindSliderAndNumber({
+      slider: inputs.bodyCardOpacity,
+      numberInput: inputs.bodyCardOpacityInput,
+      decimals: 0,
+      min: 20,
+      max: 95,
+      onUpdate: (val) => { state.bodyCardOpacity = Number((val / 100).toFixed(2)); renderCanvas(); }
+    });
+
+    if (inputs.bodyTitleText) {
+      inputs.bodyTitleText.addEventListener('input', (e) => {
+        state.bodyTitle = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.bodyTitleFontSelect) {
+      inputs.bodyTitleFontSelect.addEventListener('change', (e) => {
+        state.bodyTitleFont = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.bodyAccentPicker) {
+      inputs.bodyAccentPicker.addEventListener('input', (e) => {
+        state.bodyAccentColor = e.target.value;
+        document.querySelectorAll('#bodyAccentPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        });
+        renderCanvas();
+      });
+    }
+
+    document.querySelectorAll('#bodyAccentPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        state.bodyAccentColor = color;
+        if (inputs.bodyAccentPicker) inputs.bodyAccentPicker.value = color;
+        document.querySelectorAll('#bodyAccentPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        renderCanvas();
+      });
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.bodyTitleSize,
+      numberInput: inputs.bodyTitleSizeInput,
+      decimals: 0,
+      min: 26,
+      max: 56,
+      onUpdate: (val) => { state.bodyTitleSize = val; renderCanvas(); }
+    });
+
+    if (inputs.bodyDescText) {
+      inputs.bodyDescText.addEventListener('input', (e) => {
+        state.bodyDesc = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    bindSliderAndNumber({
+      slider: inputs.bodyDescSize,
+      numberInput: inputs.bodyDescSizeInput,
+      decimals: 0,
+      min: 16,
+      max: 32,
+      onUpdate: (val) => { state.bodyDescSize = val; renderCanvas(); }
+    });
+
+    bindSliderAndNumber({
+      slider: inputs.bodyLineHeight,
+      numberInput: inputs.bodyLineHeightInput,
+      decimals: 2,
+      min: 1.3,
+      max: 2.2,
+      onUpdate: (val) => { state.bodyLineHeight = val; renderCanvas(); }
+    });
+
+    if (inputs.bodyDescColorPicker) {
+      inputs.bodyDescColorPicker.addEventListener('input', (e) => {
+        state.bodyDescColor = e.target.value;
+        if (inputs.bodyDescColorHex) inputs.bodyDescColorHex.textContent = e.target.value.toUpperCase();
+        document.querySelectorAll('#bodyDescColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        });
+        renderCanvas();
+      });
+    }
+
+    document.querySelectorAll('#bodyDescColorPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        state.bodyDescColor = color;
+        if (inputs.bodyDescColorPicker) inputs.bodyDescColorPicker.value = color;
+        if (inputs.bodyDescColorHex) inputs.bodyDescColorHex.textContent = color.toUpperCase();
+        document.querySelectorAll('#bodyDescColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        renderCanvas();
+      });
+    });
+
+    if (inputs.showBodyQuote) {
+      inputs.showBodyQuote.addEventListener('change', (e) => {
+        state.showBodyQuote = e.target.checked;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.bodyQuoteText) {
+      inputs.bodyQuoteText.addEventListener('input', (e) => {
+        state.bodyQuote = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.bodyQuoteAuthor) {
+      inputs.bodyQuoteAuthor.addEventListener('input', (e) => {
+        state.bodyQuoteAuthor = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    // ==========================================
+    // 3-B. Ending Template Event Listeners
+    // ==========================================
+    document.querySelectorAll('.end-style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.end-style-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.endingDesignPreset = btn.dataset.endStyle;
+
+        const labels = {
+          'social-action': '소셜 액션형',
+          'save-reminder': '저장 유도형',
+          'series-next': '다음 편 예고'
+        };
+        if (inputs.endStyleLabel) inputs.endStyleLabel.textContent = labels[state.endingDesignPreset] || '소셜 액션형';
+        if (inputs.endSaveOptions) inputs.endSaveOptions.classList.toggle('hidden', state.endingDesignPreset !== 'save-reminder');
+        if (inputs.endSeriesOptions) inputs.endSeriesOptions.classList.toggle('hidden', state.endingDesignPreset !== 'series-next');
+        renderCanvas();
+      });
+    });
+
+    // 저장 유도형 서브 옵션 리스너
+    if (inputs.endSaveHookText) {
+      inputs.endSaveHookText.addEventListener('input', (e) => {
+        state.endSaveHook = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.endSaveCardTitleText) {
+      inputs.endSaveCardTitleText.addEventListener('input', (e) => {
+        state.endSaveCardTitle = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.endSaveCardDescText) {
+      inputs.endSaveCardDescText.addEventListener('input', (e) => {
+        state.endSaveCardDesc = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.endSaveSubCtaText) {
+      inputs.endSaveSubCtaText.addEventListener('input', (e) => {
+        state.endSaveSubCta = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    // 다음 편 예고 서브 옵션 리스너
+    if (inputs.endNextBadgeText) {
+      inputs.endNextBadgeText.addEventListener('input', (e) => {
+        state.endNextBadge = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.endNextTitleText) {
+      inputs.endNextTitleText.addEventListener('input', (e) => {
+        state.endNextTitle = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.endNextDateText) {
+      inputs.endNextDateText.addEventListener('input', (e) => {
+        state.endNextDate = e.target.value;
+        renderCanvas();
+      });
+    }
+    if (inputs.endNextNoticeText) {
+      inputs.endNextNoticeText.addEventListener('input', (e) => {
+        state.endNextNotice = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.showEndTag) {
+      inputs.showEndTag.addEventListener('change', (e) => {
+        state.showEndTag = e.target.checked;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.endTagText) {
+      inputs.endTagText.addEventListener('input', (e) => {
+        state.endTag = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.endTitleText) {
+      inputs.endTitleText.addEventListener('input', (e) => {
+        state.endTitle = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.endTitleFontSelect) {
+      inputs.endTitleFontSelect.addEventListener('change', (e) => {
+        state.endTitleFont = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    bindSliderAndNumber({
+      slider: inputs.endTitleSize,
+      numberInput: inputs.endTitleSizeInput,
+      decimals: 0,
+      min: 32,
+      max: 72,
+      onUpdate: (val) => { state.endTitleSize = val; renderCanvas(); }
+    });
+
+    if (inputs.endTitleColorPicker) {
+      inputs.endTitleColorPicker.addEventListener('input', (e) => {
+        state.endTitleColor = e.target.value;
+        if (inputs.endTitleColorHex) inputs.endTitleColorHex.textContent = e.target.value.toUpperCase();
+        document.querySelectorAll('#endTitleColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        });
+        renderCanvas();
+      });
+    }
+
+    document.querySelectorAll('#endTitleColorPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        state.endTitleColor = color;
+        if (inputs.endTitleColorPicker) inputs.endTitleColorPicker.value = color;
+        if (inputs.endTitleColorHex) inputs.endTitleColorHex.textContent = color.toUpperCase();
+        document.querySelectorAll('#endTitleColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        renderCanvas();
+      });
+    });
+
+    if (inputs.endDescText) {
+      inputs.endDescText.addEventListener('input', (e) => {
+        state.endDesc = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    bindSliderAndNumber({
+      slider: inputs.endDescSize,
+      numberInput: inputs.endDescSizeInput,
+      decimals: 0,
+      min: 16,
+      max: 32,
+      onUpdate: (val) => { state.endDescSize = val; renderCanvas(); }
+    });
+
+    document.querySelectorAll('.end-action-style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.end-action-style-btn').forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+          b.classList.add('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        });
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10', 'text-indigo-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-900', 'text-slate-400');
+        state.endActionStyle = btn.dataset.style;
+        renderCanvas();
+      });
+    });
+
+    if (inputs.endCtaText) {
+      inputs.endCtaText.addEventListener('input', (e) => {
+        state.endCtaText = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.endCtaColorPicker) {
+      inputs.endCtaColorPicker.addEventListener('input', (e) => {
+        state.endCtaColor = e.target.value;
+        if (inputs.endCtaColorHex) inputs.endCtaColorHex.textContent = e.target.value.toUpperCase();
+        document.querySelectorAll('#endCtaColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        });
+        renderCanvas();
+      });
+    }
+
+    document.querySelectorAll('#endCtaColorPresets button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        state.endCtaColor = color;
+        if (inputs.endCtaColorPicker) inputs.endCtaColorPicker.value = color;
+        if (inputs.endCtaColorHex) inputs.endCtaColorHex.textContent = color.toUpperCase();
+        document.querySelectorAll('#endCtaColorPresets button').forEach(b => {
+          b.classList.remove('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        });
+        btn.classList.add('ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-slate-900');
+        renderCanvas();
+      });
+    });
+
+    if (inputs.showEndFooter) {
+      inputs.showEndFooter.addEventListener('change', (e) => {
+        state.showEndFooter = e.target.checked;
+        renderCanvas();
+      });
+    }
+
+    if (inputs.endHandleText) {
+      inputs.endHandleText.addEventListener('input', (e) => {
+        state.endHandle = e.target.value;
+        renderCanvas();
+      });
+    }
+
+    // Reset Pan Position Button
+    resetPanBtn.addEventListener('click', () => {
+      state.panX = 0;
+      state.panY = 0;
+      state.zoom = 1.0;
+      inputs.panXSlider.value = 0;
+      inputs.panYSlider.value = 0;
+      inputs.zoomSlider.value = 1.0;
+      if (inputs.panXInput) inputs.panXInput.value = 0;
+      if (inputs.panYInput) inputs.panYInput.value = 0;
+      if (inputs.zoomInput) inputs.zoomInput.value = '1.0';
+      renderCanvas();
+      showToast('사진 위치와 확대 배율이 리셋되었습니다.');
+    });
+
+    // Direct Canvas Drag to Pan
+    canvas.addEventListener('mousedown', (e) => {
+      state.isDragging = true;
+      state.dragStartX = e.clientX;
+      state.dragStartY = e.clientY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!state.isDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = state.width / rect.width;
+      const scaleY = state.height / rect.height;
+
+      const deltaX = (e.clientX - state.dragStartX) * scaleX;
+      const deltaY = (e.clientY - state.dragStartY) * scaleY;
+
+      state.panX += deltaX;
+      state.panY += deltaY;
+
+      inputs.panXSlider.value = Math.max(-500, Math.min(500, Math.round(state.panX)));
+      inputs.panYSlider.value = Math.max(-500, Math.min(500, Math.round(state.panY)));
+      if (inputs.panXInput) inputs.panXInput.value = Math.round(state.panX);
+      if (inputs.panYInput) inputs.panYInput.value = Math.round(state.panY);
+
+      state.dragStartX = e.clientX;
+      state.dragStartY = e.clientY;
+      renderCanvas();
+    });
+
+    window.addEventListener('mouseup', () => {
+      state.isDragging = false;
+    });
+
+    // Touch support for drag
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        state.isDragging = true;
+        state.dragStartX = e.touches[0].clientX;
+        state.dragStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!state.isDragging || e.touches.length !== 1) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = state.width / rect.width;
+      const scaleY = state.height / rect.height;
+
+      const deltaX = (e.touches[0].clientX - state.dragStartX) * scaleX;
+      const deltaY = (e.touches[0].clientY - state.dragStartY) * scaleY;
+
+      state.panX += deltaX;
+      state.panY += deltaY;
+
+      inputs.panXSlider.value = Math.max(-500, Math.min(500, Math.round(state.panX)));
+      inputs.panYSlider.value = Math.max(-500, Math.min(500, Math.round(state.panY)));
+      if (inputs.panXInput) inputs.panXInput.value = Math.round(state.panX);
+      if (inputs.panYInput) inputs.panYInput.value = Math.round(state.panY);
+
+      state.dragStartX = e.touches[0].clientX;
+      state.dragStartY = e.touches[0].clientY;
+      renderCanvas();
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+      state.isDragging = false;
+    });
+
+    // Image File Loader
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('유효한 이미지 파일을 선택해주세요.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          state.image = img;
+          state.panX = 0;
+          state.panY = 0;
+          state.zoom = 1.0;
+          if (inputs.panXSlider) inputs.panXSlider.value = 0;
+          if (inputs.panYSlider) inputs.panYSlider.value = 0;
+          if (inputs.zoomSlider) inputs.zoomSlider.value = 1.0;
+          if (inputs.panXInput) inputs.panXInput.value = 0;
+          if (inputs.panYInput) inputs.panYInput.value = 0;
+          if (inputs.zoomInput) inputs.zoomInput.value = '1.0';
+          renderCanvas();
+          showToast('새 이미지가 성공적으로 로드되었습니다!');
+        };
+        img.onerror = () => {
+          showToast('이미지를 불러오는데 실패했습니다.');
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = () => {
+        showToast('파일을 읽는데 실패했습니다.');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    dropZone.addEventListener('click', (e) => {
+      if (e.target !== imageInput) {
+        imageInput.value = '';
+        imageInput.click();
+      }
+    });
+    imageInput.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    imageInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    // Drag & Drop handlers
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('border-indigo-400', 'bg-indigo-950/20');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('border-indigo-400', 'bg-indigo-950/20');
+      });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length) {
+        handleFile(dt.files[0]);
+      } else if (dt) {
+        // 웹 브라우저에서 외부 이미지 URL 드래그 앤 드롭 시 안전한 처리
+        const url = dt.getData('text/uri-list') || dt.getData('text/plain');
+        if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/'))) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            state.image = img;
+            if (typeof pages !== 'undefined' && pages[activePageIndex]) {
+              pages[activePageIndex].image = img;
+            }
+            state.panX = 0;
+            state.panY = 0;
+            state.zoom = 1.0;
+            if (inputs.panXSlider) inputs.panXSlider.value = 0;
+            if (inputs.panYSlider) inputs.panYSlider.value = 0;
+            if (inputs.zoomSlider) inputs.zoomSlider.value = 1.0;
+            if (inputs.panXInput) inputs.panXInput.value = 0;
+            if (inputs.panYInput) inputs.panYInput.value = 0;
+            if (inputs.zoomInput) inputs.zoomInput.value = '1.0';
+            renderCanvas();
+            showToast('웹 이미지를 성공적으로 가져왔습니다!');
+          };
+          img.onerror = () => {
+            showToast('외부 이미지를 불러올 수 없습니다 (CORS 제한 또는 유효하지 않은 주소).');
+          };
+          img.src = url;
+        }
+      }
+    });
+
+    // Export High-Resolution Card News Image
+    downloadBtn.addEventListener('click', () => {
+      try {
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().slice(0, 10);
+        link.download = `카드뉴스_${timestamp}.png`;
+        link.href = canvas.toDataURL('image/png', 1.0);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('고해상도 카드뉴스가 다운로드되었습니다!');
+      } catch (err) {
+        if (err.name === 'SecurityError' || String(err).includes('tainted')) {
+          showToast('외부 이미지 출처 보안 정책(CORS)으로 인해 다운로드가 제한되었습니다. 직접 업로드한 이미지 파일을 사용해주세요.');
+        } else {
+          showToast('다운로드 중 오류가 발생했습니다: ' + (err.message || ''));
+        }
+      }
+    });
+
+    // Preset Reset Button
+    resetPresetBtn.addEventListener('click', () => {
+      if (state.templateMode === 'body') {
+        state.showBodyTopBar = true;
+        state.bodyCategory = '💡 핵심 요약 & 트렌드';
+        state.bodyPage = '02 / 06';
+        state.bodyCardStyle = 'glass';
+        state.bodyCardOpacity = 0.85;
+        state.bodyTitle = '01. 변화를 주도하는\n새로운 기술 트렌드';
+        state.bodyTitleFont = "'Pretendard', sans-serif";
+        state.bodyAccentColor = '#6366f1';
+        state.bodyTitleSize = 38;
+        state.bodyDesc = '사용자 경험과 자동화의 결합으로 기존 작업 방식이 근본적으로 재편되고 있습니다.\n\n단순 반복 업무는 AI 에이전트가 처리하고, 사람은 전략과 창의적 기획에 집중하는 새로운 협업 패러다임이 확산되는 중입니다.';
+        state.bodyDescSize = 23;
+        state.bodyLineHeight = 1.65;
+        state.bodyDescColor = '#e2e8f0';
+        state.showBodyQuote = true;
+        state.bodyQuote = '"결국 중요한 것은 기술 자체가 아니라, 이를 통해 어떤 실질적 가치를 창출하는가이다."';
+        state.bodyQuoteAuthor = '— 2026 글로벌 테크 인더스트리 리포트';
+
+        if (inputs.showBodyTopBar) inputs.showBodyTopBar.checked = true;
+        if (inputs.bodyCategoryText) inputs.bodyCategoryText.value = state.bodyCategory;
+        if (inputs.bodyPageText) inputs.bodyPageText.value = state.bodyPage;
+        if (inputs.bodyCardOpacity) inputs.bodyCardOpacity.value = 85;
+        if (inputs.bodyCardOpacityInput) inputs.bodyCardOpacityInput.value = 85;
+        if (inputs.bodyTitleText) inputs.bodyTitleText.value = state.bodyTitle;
+        if (inputs.bodyTitleFontSelect) inputs.bodyTitleFontSelect.value = state.bodyTitleFont;
+        if (inputs.bodyAccentPicker) inputs.bodyAccentPicker.value = '#6366f1';
+        if (inputs.bodyTitleSize) inputs.bodyTitleSize.value = 38;
+        if (inputs.bodyTitleSizeInput) inputs.bodyTitleSizeInput.value = 38;
+        if (inputs.bodyDescText) inputs.bodyDescText.value = state.bodyDesc;
+        if (inputs.bodyDescSize) inputs.bodyDescSize.value = 23;
+        if (inputs.bodyDescSizeInput) inputs.bodyDescSizeInput.value = 23;
+        if (inputs.bodyLineHeight) inputs.bodyLineHeight.value = 1.65;
+        if (inputs.bodyLineHeightInput) inputs.bodyLineHeightInput.value = 1.65;
+        if (inputs.bodyDescColorPicker) inputs.bodyDescColorPicker.value = '#e2e8f0';
+        if (inputs.bodyDescColorHex) inputs.bodyDescColorHex.textContent = '#E2E8F0';
+        if (inputs.showBodyQuote) inputs.showBodyQuote.checked = true;
+        if (inputs.bodyQuoteText) inputs.bodyQuoteText.value = state.bodyQuote;
+        if (inputs.bodyQuoteAuthor) inputs.bodyQuoteAuthor.value = state.bodyQuoteAuthor;
+
+        // 본문 3종 디자인 상태 및 서브 옵션 리셋
+        state.bodyCardStyle = 'glass';
+        state.bodyStepBadge = 'STEP 01';
+        state.bodyItem1Title = '01. 사용자 중심의 레이아웃 설계';
+        state.bodyItem1Desc = '시선의 흐름(F패턴)을 고려하여 3초 안에 핵심 메시지가 각인되도록 구성합니다.';
+        state.bodyItem2Title = '02. 가독성을 높이는 폰트와 대비';
+        state.bodyItem2Desc = '배경 사진과 텍스트의 명도 대비를 70% 이상 확보하여 모바일에서도 선명하게 읽힙니다.';
+        state.bodyItem3Title = '03. 명확한 다음 행동 유도(CTA)';
+        state.bodyItem3Desc = '단순 정보 전달에 그치지 않고, 저장/공유/댓글 등의 명확한 트리거를 제시합니다.';
+
+        if (inputs.bodyStepBadgeText) inputs.bodyStepBadgeText.value = state.bodyStepBadge;
+        if (inputs.bodyItem1TitleText) inputs.bodyItem1TitleText.value = state.bodyItem1Title;
+        if (inputs.bodyItem1DescText) inputs.bodyItem1DescText.value = state.bodyItem1Desc;
+        if (inputs.bodyItem2TitleText) inputs.bodyItem2TitleText.value = state.bodyItem2Title;
+        if (inputs.bodyItem2DescText) inputs.bodyItem2DescText.value = state.bodyItem2Desc;
+        if (inputs.bodyItem3TitleText) inputs.bodyItem3TitleText.value = state.bodyItem3Title;
+        if (inputs.bodyItem3DescText) inputs.bodyItem3DescText.value = state.bodyItem3Desc;
+        if (inputs.bodyStyleLabel) inputs.bodyStyleLabel.textContent = '글래스 모피즘';
+        if (inputs.bodyStepOptions) inputs.bodyStepOptions.classList.add('hidden');
+
+        document.querySelectorAll('.body-card-style-btn').forEach(b => {
+          const isDefault = b.dataset.style === 'glass';
+          b.classList.toggle('border-indigo-500', isDefault);
+          b.classList.toggle('bg-indigo-500/10', isDefault);
+          b.classList.toggle('text-indigo-300', isDefault);
+          b.classList.toggle('border-slate-800', !isDefault);
+          b.classList.toggle('bg-slate-900', !isDefault);
+          b.classList.toggle('text-slate-400', !isDefault);
+        });
+
+      } else if (state.templateMode === 'ending') {
+        state.showEndTag = true;
+        state.endTag = 'EPILOGUE · 맺음말';
+        state.endTitle = '여러분의 생각은\n어떠신가요?';
+        state.endTitleFont = "'Pretendard', sans-serif";
+        state.endTitleSize = 50;
+        state.endTitleColor = '#ffffff';
+        state.endDesc = '인사이트가 유익하셨다면 지금 저장해두고,\n동료나 지인들에게 공유해보세요!\n댓글로 다양한 의견을 남겨주시면 큰 힘이 됩니다.';
+        state.endDescSize = 23;
+        state.endActionStyle = 'insta';
+        state.endCtaText = '지금 저장하고 프로필 링크 확인하기 ➔';
+        state.endCtaColor = '#6366f1';
+        state.showEndFooter = true;
+        state.endHandle = '@cardnews_studio | 매주 목요일 새로운 인사이트';
+
+        // 엔딩 3종 디자인 상태 및 서브 옵션 리셋
+        state.endingDesignPreset = 'social-action';
+        state.endSaveHook = '놓치면 후회할 꿀팁, 지금 저장해두셨나요?';
+        state.endSaveCardTitle = '나중에 다시 보려면 꼭 [저장 📌]';
+        state.endSaveCardDesc = '필요할 때 헤매지 않고 내 보관함에서 바로 꺼내보세요!';
+        state.endSaveSubCta = '프로필 링크에서 실전 템플릿 무료 다운로드 ➔';
+        state.endNextBadge = 'NEXT ISSUE PREVIEW · 다음 편 예고';
+        state.endNextTitle = 'VOL. 02 ➔ AI 에이전트로 10배 빠른 콘텐츠 기획하기';
+        state.endNextDate = '📅 다음 주 목요일 저녁 7시 정식 발행';
+        state.endNextNotice = '궁금한 질문이나 다뤄줬으면 하는 주제는 [댓글]로 남겨주세요!';
+
+        if (inputs.showEndTag) inputs.showEndTag.checked = true;
+        if (inputs.endTagText) inputs.endTagText.value = state.endTag;
+        if (inputs.endTitleText) inputs.endTitleText.value = state.endTitle;
+        if (inputs.endTitleFontSelect) inputs.endTitleFontSelect.value = state.endTitleFont;
+        if (inputs.endTitleSize) inputs.endTitleSize.value = 50;
+        if (inputs.endTitleSizeInput) inputs.endTitleSizeInput.value = 50;
+        if (inputs.endTitleColorPicker) inputs.endTitleColorPicker.value = '#ffffff';
+        if (inputs.endTitleColorHex) inputs.endTitleColorHex.textContent = '#FFFFFF';
+        if (inputs.endDescText) inputs.endDescText.value = state.endDesc;
+        if (inputs.endDescSize) inputs.endDescSize.value = 23;
+        if (inputs.endDescSizeInput) inputs.endDescSizeInput.value = 23;
+        if (inputs.endCtaText) inputs.endCtaText.value = state.endCtaText;
+        if (inputs.endCtaColorPicker) inputs.endCtaColorPicker.value = '#6366f1';
+        if (inputs.endCtaColorHex) inputs.endCtaColorHex.textContent = '#6366F1';
+        if (inputs.showEndFooter) inputs.showEndFooter.checked = true;
+        if (inputs.endHandleText) inputs.endHandleText.value = state.endHandle;
+
+        if (inputs.endSaveHookText) inputs.endSaveHookText.value = state.endSaveHook;
+        if (inputs.endSaveCardTitleText) inputs.endSaveCardTitleText.value = state.endSaveCardTitle;
+        if (inputs.endSaveCardDescText) inputs.endSaveCardDescText.value = state.endSaveCardDesc;
+        if (inputs.endSaveSubCtaText) inputs.endSaveSubCtaText.value = state.endSaveSubCta;
+        if (inputs.endNextBadgeText) inputs.endNextBadgeText.value = state.endNextBadge;
+        if (inputs.endNextTitleText) inputs.endNextTitleText.value = state.endNextTitle;
+        if (inputs.endNextDateText) inputs.endNextDateText.value = state.endNextDate;
+        if (inputs.endNextNoticeText) inputs.endNextNoticeText.value = state.endNextNotice;
+        if (inputs.endStyleLabel) inputs.endStyleLabel.textContent = '소셜 액션형';
+        if (inputs.endSaveOptions) inputs.endSaveOptions.classList.add('hidden');
+        if (inputs.endSeriesOptions) inputs.endSeriesOptions.classList.add('hidden');
+
+        document.querySelectorAll('.end-style-btn').forEach(b => {
+          const isDefault = b.dataset.endStyle === 'social-action';
+          b.classList.toggle('border-indigo-500', isDefault);
+          b.classList.toggle('bg-indigo-500/10', isDefault);
+          b.classList.toggle('text-indigo-300', isDefault);
+          b.classList.toggle('border-slate-800', !isDefault);
+          b.classList.toggle('bg-slate-900', !isDefault);
+          b.classList.toggle('text-slate-400', !isDefault);
+        });
+
+        document.querySelectorAll('.end-action-style-btn').forEach(b => {
+          const isDefault = b.dataset.style === 'insta';
+          b.classList.toggle('border-indigo-500', isDefault);
+          b.classList.toggle('bg-indigo-500/10', isDefault);
+          b.classList.toggle('text-indigo-300', isDefault);
+          b.classList.toggle('border-slate-800', !isDefault);
+          b.classList.toggle('bg-slate-900', !isDefault);
+          b.classList.toggle('text-slate-400', !isDefault);
+        });
+
+      } else {
+        // 표지 (Cover) 모드 리셋
+        state.coverDesignPreset = 'editorial';
+        state.coverIssueTag = '✦ VOL. 09 · MONTHLY ISSUE · 2026.09 ✦';
+        state.coverCurator = 'CURATED BY @CARDNEWS_STUDIO';
+        state.coverFrameColor = '#ffffff';
+        state.coverStickerNumber = 'TIP 01';
+        state.coverStickerCategory = 'TREND & TECH';
+        state.coverStickerSub = '3분 완성 실전 꿀팁 ➔';
+        state.coverStickerColor = '#facc15';
+
+        if (inputs.coverIssueTagText) inputs.coverIssueTagText.value = state.coverIssueTag;
+        if (inputs.coverCuratorText) inputs.coverCuratorText.value = state.coverCurator;
+        if (inputs.coverFrameColorPicker) inputs.coverFrameColorPicker.value = '#ffffff';
+        if (inputs.coverStickerNumberText) inputs.coverStickerNumberText.value = state.coverStickerNumber;
+        if (inputs.coverStickerCategoryText) inputs.coverStickerCategoryText.value = state.coverStickerCategory;
+        if (inputs.coverStickerSubText) inputs.coverStickerSubText.value = state.coverStickerSub;
+        if (inputs.coverStickerColorPicker) inputs.coverStickerColorPicker.value = '#facc15';
+        if (inputs.coverStyleLabel) inputs.coverStyleLabel.textContent = '에디토리얼';
+        if (inputs.coverMagazineOptions) inputs.coverMagazineOptions.classList.add('hidden');
+        if (inputs.coverStickerOptions) inputs.coverStickerOptions.classList.add('hidden');
+
+        document.querySelectorAll('.cover-style-btn').forEach(b => {
+          const isDefault = b.dataset.coverStyle === 'editorial';
+          b.classList.toggle('border-indigo-500', isDefault);
+          b.classList.toggle('bg-indigo-500/10', isDefault);
+          b.classList.toggle('text-indigo-300', isDefault);
+          b.classList.toggle('border-slate-800', !isDefault);
+          b.classList.toggle('bg-slate-900', !isDefault);
+          b.classList.toggle('text-slate-400', !isDefault);
+        });
+
+        state.credit = '배경 이미지: 서울경제 권욱 기자';
+        state.headline = '2026년 9월 4주차\n일간 이슈 정리';
+        state.subtitle = '북중미 정상회담부터 조희대 재제청 논란까지';
+        state.showCredit = true;
+        state.creditPos = 'top-left';
+        state.creditStyle = 'minimal';
+        state.creditSize = 20;
+        state.creditOpacity = 85;
+        state.showSubtitle = true;
+        state.showBadge = true;
+        state.badge = 'ISSUE BRIEFING';
+        state.badgeSize = 26;
+        state.badgeBgColor = '#ef4444';
+        state.badgeTextColor = '#ffffff';
+        state.badgeStyle = 'solid';
+        state.badgeRadius = 'pill';
+        state.badgePosition = 'above-headline';
+        state.headlineFont = "'Pretendard', sans-serif";
+        state.headlineAlign = 'left';
+        state.headlineVPos = 'bottom';
+        state.headlineOffsetY = 0;
+        state.headlineColor = '#ffffff';
+        state.headlineStyle = 'soft-shadow';
+        state.subFont = 'inherit';
+        state.subPosition = 'bottom-opposite';
+        state.subTextColor = '#ffffff';
+        state.headlineSize = 68;
+        state.headlineLineHeight = 1.18;
+        state.subSize = 32;
+        state.gradColor = '#000000';
+        state.gradIntensity = 0.85;
+        state.gradHeight = 0.42;
+
+        inputs.creditText.value = state.credit;
+        inputs.headlineText.value = state.headline;
+        inputs.subtitleText.value = state.subtitle;
+        inputs.badgeText.value = state.badge;
+        inputs.showCredit.checked = true;
+        inputs.showSubtitle.checked = true;
+        inputs.showBadge.checked = true;
+        inputs.subControlPanel.style.opacity = '1';
+        inputs.subControlPanel.style.pointerEvents = 'auto';
+        inputs.badgeControlPanel.style.opacity = '1';
+        inputs.badgeControlPanel.style.pointerEvents = 'auto';
+        inputs.badgeSize.value = 26;
+        if (inputs.badgeSizeInput) inputs.badgeSizeInput.value = 26;
+        inputs.badgeColorPicker.value = '#ef4444';
+        inputs.badgeColorHex.textContent = '#EF4444';
+        inputs.headlineFontSelect.value = "'Pretendard', sans-serif";
+        inputs.headlineOffsetY.value = 0;
+        if (inputs.headlineOffsetYInput) inputs.headlineOffsetYInput.value = 0;
+        inputs.headlineColorPicker.value = '#ffffff';
+        inputs.headlineColorHex.textContent = '#FFFFFF';
+        inputs.subFontSelect.value = 'inherit';
+        inputs.headlineSize.value = 68;
+        if (inputs.headlineSizeInput) inputs.headlineSizeInput.value = 68;
+        inputs.headlineLineHeight.value = 1.18;
+        if (inputs.headlineLineHeightInput) inputs.headlineLineHeightInput.value = 1.18;
+        inputs.subSize.value = 32;
+        if (inputs.subSizeInput) inputs.subSizeInput.value = 32;
+        inputs.subColorPicker.value = '#ffffff';
+        inputs.subTextColorHex.textContent = '#FFFFFF';
+        inputs.gradColorPicker.value = '#000000';
+        inputs.gradColorHex.textContent = '#000000';
+        inputs.gradIntensity.value = 85;
+        if (inputs.gradIntensityInput) inputs.gradIntensityInput.value = 85;
+        inputs.gradHeight.value = 42;
+        if (inputs.gradHeightInput) inputs.gradHeightInput.value = 42;
+      }
+
+      // Reset headline & sub buttons
+      document.querySelectorAll('.hl-align-btn').forEach(b => {
+        const isDefault = b.dataset.align === 'left';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/10', isDefault);
+        b.classList.toggle('text-indigo-300', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+      document.querySelectorAll('.hl-vpos-btn').forEach(b => {
+        const isDefault = b.dataset.vpos === 'bottom';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/10', isDefault);
+        b.classList.toggle('text-indigo-300', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+      document.querySelectorAll('.hl-style-btn').forEach(b => {
+        const isDefault = b.dataset.style === 'soft-shadow';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/10', isDefault);
+        b.classList.toggle('text-indigo-300', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+      document.querySelectorAll('.sub-pos-btn').forEach(b => {
+        const isDefault = b.dataset.subpos === 'bottom-opposite';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/10', isDefault);
+        b.classList.toggle('text-indigo-300', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+      document.querySelectorAll('#subColorPresets button').forEach(b => {
+        const isDefault = b.dataset.subcolor.toLowerCase() === '#ffffff';
+        b.classList.toggle('ring-2', isDefault);
+        b.classList.toggle('ring-indigo-500', isDefault);
+        b.classList.toggle('ring-offset-1', isDefault);
+        b.classList.toggle('ring-offset-slate-900', isDefault);
+      });
+      document.querySelectorAll('#gradColorPresets button').forEach(b => {
+        const isDefault = b.dataset.gradcolor.toLowerCase() === '#000000';
+        b.classList.toggle('ring-2', isDefault);
+        b.classList.toggle('ring-indigo-500', isDefault);
+        b.classList.toggle('ring-offset-1', isDefault);
+        b.classList.toggle('ring-offset-slate-900', isDefault);
+      });
+
+      // Reset button styles
+      document.querySelectorAll('.badge-pos-btn').forEach(b => {
+        const isDefault = b.dataset.pos === 'above-headline';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/10', isDefault);
+        b.classList.toggle('text-indigo-300', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+      document.querySelectorAll('.badge-style-btn').forEach(b => {
+        const isDefault = b.dataset.style === 'solid';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/10', isDefault);
+        b.classList.toggle('text-indigo-300', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+      document.querySelectorAll('.badge-radius-btn').forEach(b => {
+        const isDefault = b.dataset.radius === 'pill';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/10', isDefault);
+        b.classList.toggle('text-indigo-300', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+      document.querySelectorAll('.badge-textcolor-btn').forEach(b => {
+        const isDefault = b.dataset.textcolor === '#ffffff';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/20', isDefault);
+        b.classList.toggle('text-white', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+      document.querySelectorAll('#badgeColorPresets button').forEach(b => {
+        const isSelected = b.dataset.color.toLowerCase() === '#ef4444';
+        b.classList.toggle('ring-2', isSelected);
+        b.classList.toggle('ring-white', isSelected);
+        b.classList.toggle('ring-offset-2', isSelected);
+        b.classList.toggle('ring-offset-slate-900', isSelected);
+      });
+
+      // Reset photo filters
+      state.brightness = 100;
+      state.contrast = 100;
+      state.saturate = 100;
+      state.blur = 0;
+      state.vignette = 0;
+      state.tintOpacity = 0;
+      state.flipH = false;
+      state.flipV = false;
+      state.filterPreset = 'normal';
+
+      inputs.flipHBtn.classList.remove('bg-indigo-600', 'text-white');
+      inputs.flipHBtn.classList.add('bg-slate-800');
+      inputs.flipVBtn.classList.remove('bg-indigo-600', 'text-white');
+      inputs.flipVBtn.classList.add('bg-slate-800');
+
+      document.querySelectorAll('.filter-preset-btn').forEach(b => {
+        const isDefault = b.dataset.filter === 'normal';
+        b.classList.toggle('border-indigo-500', isDefault);
+        b.classList.toggle('bg-indigo-500/10', isDefault);
+        b.classList.toggle('text-indigo-300', isDefault);
+        b.classList.toggle('border-slate-800', !isDefault);
+        b.classList.toggle('bg-slate-900', !isDefault);
+        b.classList.toggle('text-slate-400', !isDefault);
+      });
+      syncPhotoFilterSliders();
+
+      renderCanvas();
+      showToast('예시 템플릿 값으로 복원되었습니다.');
+    });
+
+    // ==========================================
+    // Work Mode Management (간편 제작 vs 상세 조정 모드)
+    // ==========================================
+    function setWorkMode(mode) {
+      if (mode !== 'simple' && mode !== 'pro') return;
+      state.workMode = mode;
+
+      // Body 클래스 토글 (CSS pro-only / simple-only 제어)
+      document.body.classList.toggle('mode-simple', mode === 'simple');
+      document.body.classList.toggle('mode-pro', mode === 'pro');
+
+      // 상단 스위처 버튼 상태 갱신
+      const workModeBtns = document.querySelectorAll('.work-mode-btn');
+      workModeBtns.forEach(btn => {
+        const isActive = btn.dataset.workMode === mode;
+        btn.classList.toggle('mode-tab-active', isActive);
+        btn.classList.toggle('text-slate-400', !isActive);
+      });
+
+      // 인디케이터 배지 갱신
+      const workModeBadge = document.getElementById('workModeBadge');
+      if (workModeBadge) {
+        if (mode === 'simple') {
+          workModeBadge.textContent = '⚡ 간편 제작 모드';
+          workModeBadge.className = 'text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        } else {
+          workModeBadge.textContent = '🛠️ 상세 조정 모드';
+          workModeBadge.className = 'text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+        }
+      }
+
+      showToast(mode === 'simple' ? '⚡ 간편 제작 모드로 전환되었습니다. (핵심 입력 집중)' : '🛠️ 상세 조정 모드로 전환되었습니다. (모든 세부 옵션 활성화)');
+    }
+
+    // 모드 스위처 버튼 클릭 이벤트 바인딩
+    document.querySelectorAll('.work-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.workMode;
+        if (mode) setWorkMode(mode);
+      });
+    });
+
+    // 사이드바 하단 상세 모드 전환 바로가기 버튼 클릭 이벤트
+    const switchToProBtn = document.getElementById('switchToProBtn');
+    if (switchToProBtn) {
+      switchToProBtn.addEventListener('click', () => {
+        setWorkMode('pro');
+        const sidebar = document.querySelector('aside');
+        if (sidebar) sidebar.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    // ==========================================
+    // Multi-Page Slide Management Engine
+    // ==========================================
+    function createPageTemplate(templateMode, pageNum = 1, totalPages = 3) {
+      const pageStr = `${String(pageNum).padStart(2, '0')} / ${String(totalPages).padStart(2, '0')}`;
+      return {
+        templateMode: templateMode || 'body',
+        image: state.image || null,
+        zoom: 1.0,
+        panX: 0,
+        panY: 0,
+        brightness: 100,
+        contrast: 100,
+        saturate: 100,
+        blur: 0,
+        vignette: 0,
+        tintColor: '#0f172a',
+        tintOpacity: 0,
+        flipH: false,
+        flipV: false,
+        filterPreset: 'normal',
+        credit: state.credit || '배경 이미지: 서울경제 권욱 기자',
+        showCredit: true,
+        creditPos: 'top-left',
+        creditStyle: 'minimal',
+        creditSize: 20,
+        creditOpacity: 85,
+        gradColor: '#000000',
+        gradIntensity: 0.85,
+        gradHeight: 0.42,
+
+        // Cover defaults
+        coverDesignPreset: 'editorial',
+        coverIssueTag: '✦ VOL. 09 · MONTHLY ISSUE · 2026.09 ✦',
+        coverCurator: 'CURATED BY @CARDNEWS_STUDIO',
+        coverFrameColor: '#ffffff',
+        coverStickerNumber: `TIP ${String(pageNum).padStart(2, '0')}`,
+        coverStickerCategory: 'TREND & TECH',
+        coverStickerSub: '3분 완성 실전 꿀팁 ➔',
+        coverStickerColor: '#facc15',
+        headline: '2026년 9월 4주차\n일간 이슈 정리',
+        headlineFont: "'Pretendard', sans-serif",
+        headlineAlign: 'left',
+        headlineVPos: 'bottom',
+        headlineOffsetY: 0,
+        headlineColor: '#ffffff',
+        headlineStyle: 'soft-shadow',
+        headlineSize: 68,
+        headlineLineHeight: 1.18,
+        subtitle: '북중미 정상회담부터 조희대 재제청 논란까지',
+        showSubtitle: true,
+        subFont: 'inherit',
+        subPosition: 'bottom-opposite',
+        subTextColor: '#ffffff',
+        subSize: 32,
+        badge: 'ISSUE BRIEFING',
+        showBadge: true,
+        badgeSize: 26,
+        badgeBgColor: '#ef4444',
+        badgeTextColor: '#ffffff',
+        badgeStyle: 'solid',
+        badgeRadius: 'pill',
+        badgePosition: 'above-headline',
+
+        // Body defaults
+        showBodyTopBar: true,
+        bodyCategory: '💡 핵심 요약 & 트렌드',
+        bodyPage: pageStr,
+        bodyCardStyle: 'glass',
+        bodyCardOpacity: 0.85,
+        bodyTitle: `${String(pageNum - 1 > 0 ? pageNum - 1 : 1).padStart(2, '0')}. 변화를 주도하는\n새로운 기술 트렌드`,
+        bodyTitleFont: "'Pretendard', sans-serif",
+        bodyAccentColor: '#6366f1',
+        bodyTitleSize: 38,
+        bodyDesc: '사용자 경험과 자동화의 결합으로 기존 작업 방식이 근본적으로 재편되고 있습니다.\n\n단순 반복 업무는 AI 에이전트가 처리하고, 사람은 전략과 창의적 기획에 집중하는 새로운 협업 패러다임이 확산되는 중입니다.',
+        bodyDescSize: 23,
+        bodyLineHeight: 1.65,
+        bodyDescColor: '#e2e8f0',
+        showBodyQuote: true,
+        bodyQuote: '"결국 중요한 것은 기술 자체가 아니라, 이를 통해 어떤 실질적 가치를 창출하는가이다."',
+        bodyQuoteAuthor: '— 2026 글로벌 테크 인더스트리 리포트',
+        bodyStepBadge: `STEP ${String(pageNum - 1 > 0 ? pageNum - 1 : 1).padStart(2, '0')}`,
+        bodyItem1Title: '01. 사용자 중심의 레이아웃 설계',
+        bodyItem1Desc: '시선의 흐름(F패턴)을 고려하여 3초 안에 핵심 메시지가 각인되도록 구성합니다.',
+        bodyItem2Title: '02. 가독성을 높이는 폰트와 대비',
+        bodyItem2Desc: '배경 사진과 텍스트의 명도 대비를 70% 이상 확보하여 모바일에서도 선명하게 읽힙니다.',
+        bodyItem3Title: '03. 명확한 다음 행동 유도(CTA)',
+        bodyItem3Desc: '단순 정보 전달에 그치지 않고, 저장/공유/댓글 등의 명확한 트리거를 제시합니다.',
+
+        // Ending defaults
+        endingDesignPreset: 'social-action',
+        showEndTag: true,
+        endTag: 'EPILOGUE · 맺음말',
+        endTitle: '여러분의 생각은\n어떠신가요?',
+        endTitleFont: "'Pretendard', sans-serif",
+        endTitleSize: 50,
+        endTitleColor: '#ffffff',
+        endDesc: '인사이트가 유익하셨다면 지금 저장해두고,\n동료나 지인들에게 공유해보세요!\n댓글로 다양한 의견을 남겨주시면 큰 힘이 됩니다.',
+        endDescSize: 23,
+        endActionStyle: 'insta',
+        endCtaText: '지금 저장하고 프로필 링크 확인하기 ➔',
+        endCtaColor: '#6366f1',
+        showEndFooter: true,
+        endHandle: '@cardnews_studio | 매주 목요일 새로운 인사이트',
+        endSaveHook: '놓치면 후회할 꿀팁, 지금 저장해두셨나요?',
+        endSaveCardTitle: '나중에 다시 보려면 꼭 [저장 📌]',
+        endSaveCardDesc: '필요할 때 헤매지 않고 내 보관함에서 바로 꺼내보세요!',
+        endSaveSubCta: '프로필 링크에서 실전 템플릿 무료 다운로드 ➔',
+        endNextBadge: 'NEXT ISSUE PREVIEW · 다음 편 예고',
+        endNextTitle: 'VOL. 02 ➔ AI 에이전트로 10배 빠른 콘텐츠 기획하기',
+        endNextDate: '📅 다음 주 목요일 저녁 7시 정식 발행',
+        endNextNotice: '궁금한 질문이나 다뤄줬으면 하는 주제는 [댓글]로 남겨주세요!'
+      };
+    }
+
+    let pages = [];
+    let activePageIndex = 0;
+
+    const pageKeys = [
+      'templateMode', 'image', 'zoom', 'panX', 'panY', 'brightness', 'contrast', 'saturate',
+      'blur', 'vignette', 'tintColor', 'tintOpacity', 'flipH', 'flipV', 'filterPreset',
+      'credit', 'showCredit', 'creditPos', 'creditStyle', 'creditSize', 'creditOpacity',
+      'headline', 'headlineFont', 'headlineAlign', 'headlineVPos',
+      'headlineOffsetY', 'headlineColor', 'headlineStyle', 'headlineSize', 'headlineLineHeight',
+      'subtitle', 'showSubtitle', 'subFont', 'subPosition', 'subTextColor', 'subSize',
+      'badge', 'showBadge', 'badgeSize', 'badgeBgColor', 'badgeTextColor', 'badgeStyle',
+      'badgeRadius', 'badgePosition', 'gradColor', 'gradIntensity', 'gradHeight',
+      'coverDesignPreset', 'coverIssueTag', 'coverCurator', 'coverFrameColor',
+      'coverStickerNumber', 'coverStickerCategory', 'coverStickerSub', 'coverStickerColor',
+      'showBodyTopBar', 'bodyCategory', 'bodyPage', 'bodyCardStyle', 'bodyCardOpacity',
+      'bodyTitle', 'bodyTitleFont', 'bodyAccentColor', 'bodyTitleSize', 'bodyDesc',
+      'bodyDescSize', 'bodyLineHeight', 'bodyDescColor', 'showBodyQuote', 'bodyQuote',
+      'bodyQuoteAuthor', 'bodyStepBadge', 'bodyItem1Title', 'bodyItem1Desc',
+      'bodyItem2Title', 'bodyItem2Desc', 'bodyItem3Title', 'bodyItem3Desc',
+      'endingDesignPreset', 'showEndTag', 'endTag', 'endTitle', 'endTitleFont',
+      'endTitleSize', 'endTitleColor', 'endDesc', 'endDescSize', 'endActionStyle',
+      'endCtaText', 'endCtaColor', 'showEndFooter', 'endHandle', 'endSaveHook',
+      'endSaveCardTitle', 'endSaveCardDesc', 'endSaveSubCta', 'endNextBadge',
+      'endNextTitle', 'endNextDate', 'endNextNotice'
+    ];
+
+    function saveCurrentPage() {
+      if (!pages[activePageIndex]) return;
+      const currentPage = pages[activePageIndex];
+      for (let k of pageKeys) {
+        if (state[k] !== undefined) {
+          currentPage[k] = state[k];
+        }
+      }
+    }
+
+    function syncAllInputsFromState() {
+      if (inputs.zoomSlider) inputs.zoomSlider.value = state.zoom;
+      if (inputs.zoomInput) inputs.zoomInput.value = Number(state.zoom).toFixed(1);
+      if (inputs.panXSlider) inputs.panXSlider.value = state.panX;
+      if (inputs.panXInput) inputs.panXInput.value = state.panX;
+      if (inputs.panYSlider) inputs.panYSlider.value = state.panY;
+      if (inputs.panYInput) inputs.panYInput.value = state.panY;
+      if (inputs.brightSlider) inputs.brightSlider.value = state.brightness;
+      if (inputs.brightInput) inputs.brightInput.value = state.brightness;
+      if (inputs.contrastSlider) inputs.contrastSlider.value = state.contrast;
+      if (inputs.contrastInput) inputs.contrastInput.value = state.contrast;
+      if (inputs.saturateSlider) inputs.saturateSlider.value = state.saturate;
+      if (inputs.saturateInput) inputs.saturateInput.value = state.saturate;
+      if (inputs.blurSlider) inputs.blurSlider.value = state.blur;
+      if (inputs.blurInput) inputs.blurInput.value = state.blur;
+      if (inputs.vignetteSlider) inputs.vignetteSlider.value = state.vignette;
+      if (inputs.vignetteInput) inputs.vignetteInput.value = state.vignette;
+      if (inputs.tintColorPicker) inputs.tintColorPicker.value = state.tintColor;
+      if (inputs.tintOpacitySlider) inputs.tintOpacitySlider.value = state.tintOpacity;
+      if (inputs.tintOpacityInput) inputs.tintOpacityInput.value = state.tintOpacity;
+      if (inputs.creditText) inputs.creditText.value = state.credit || '';
+      if (inputs.showCredit) inputs.showCredit.checked = !!state.showCredit;
+      if (inputs.creditSizeSlider) inputs.creditSizeSlider.value = state.creditSize || 20;
+      if (inputs.creditSizeInput) inputs.creditSizeInput.value = state.creditSize || 20;
+      if (inputs.creditOpacitySlider) inputs.creditOpacitySlider.value = state.creditOpacity !== undefined ? state.creditOpacity : 85;
+      if (inputs.creditOpacityInput) inputs.creditOpacityInput.value = state.creditOpacity !== undefined ? state.creditOpacity : 85;
+      if (typeof updateCreditControlsUI === 'function') updateCreditControlsUI();
+      if (inputs.gradColorPicker) inputs.gradColorPicker.value = state.gradColor;
+      if (inputs.gradColorHex) inputs.gradColorHex.textContent = (state.gradColor || '#000000').toUpperCase();
+      if (inputs.gradIntensity) inputs.gradIntensity.value = Math.round(state.gradIntensity * 100);
+      if (inputs.gradIntensityInput) inputs.gradIntensityInput.value = Math.round(state.gradIntensity * 100);
+      if (inputs.gradHeight) inputs.gradHeight.value = Math.round(state.gradHeight * 100);
+      if (inputs.gradHeightInput) inputs.gradHeightInput.value = Math.round(state.gradHeight * 100);
+
+      document.querySelectorAll('.template-tab-btn').forEach(btn => {
+        const isCurrent = btn.dataset.template === state.templateMode;
+        btn.classList.toggle('border-indigo-500', isCurrent);
+        btn.classList.toggle('bg-indigo-500/20', isCurrent);
+        btn.classList.toggle('text-white', isCurrent);
+        btn.classList.toggle('shadow-sm', isCurrent);
+        btn.classList.toggle('border-transparent', !isCurrent);
+        btn.classList.toggle('bg-transparent', !isCurrent);
+        btn.classList.toggle('text-slate-400', !isCurrent);
+      });
+
+      if (currentTemplateBadge) {
+        if (state.templateMode === 'cover') {
+          currentTemplateBadge.textContent = '표지 (Cover)';
+          currentTemplateBadge.className = 'text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+          if (panelModeBadge) {
+            panelModeBadge.textContent = '표지 모드';
+            panelModeBadge.className = 'text-[10px] text-indigo-400 font-semibold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20';
+          }
+        } else if (state.templateMode === 'body') {
+          currentTemplateBadge.textContent = '본문 (Content)';
+          currentTemplateBadge.className = 'text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+          if (panelModeBadge) {
+            panelModeBadge.textContent = '본문 모드';
+            panelModeBadge.className = 'text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20';
+          }
+        } else if (state.templateMode === 'ending') {
+          currentTemplateBadge.textContent = '마무리 (Outro)';
+          currentTemplateBadge.className = 'text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+          if (panelModeBadge) {
+            panelModeBadge.textContent = '마무리 모드';
+            panelModeBadge.className = 'text-[10px] text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20';
+          }
+        }
+      }
+      if (coverConfigPanel) coverConfigPanel.classList.toggle('hidden', state.templateMode !== 'cover');
+      if (bodyConfigPanel) bodyConfigPanel.classList.toggle('hidden', state.templateMode !== 'body');
+      if (endingConfigPanel) endingConfigPanel.classList.toggle('hidden', state.templateMode !== 'ending');
+
+      if (inputs.headlineText) inputs.headlineText.value = state.headline;
+      if (inputs.headlineFontSelect) inputs.headlineFontSelect.value = state.headlineFont;
+      if (inputs.headlineSize) inputs.headlineSize.value = state.headlineSize;
+      if (inputs.headlineSizeInput) inputs.headlineSizeInput.value = state.headlineSize;
+      if (inputs.headlineLineHeight) inputs.headlineLineHeight.value = state.headlineLineHeight;
+      if (inputs.headlineLineHeightInput) inputs.headlineLineHeightInput.value = state.headlineLineHeight;
+      if (inputs.headlineOffsetY) inputs.headlineOffsetY.value = state.headlineOffsetY;
+      if (inputs.headlineOffsetYInput) inputs.headlineOffsetYInput.value = state.headlineOffsetY;
+      if (inputs.headlineColorPicker) inputs.headlineColorPicker.value = state.headlineColor;
+      if (inputs.headlineColorHex) inputs.headlineColorHex.textContent = (state.headlineColor || '#FFFFFF').toUpperCase();
+      if (inputs.subtitleText) inputs.subtitleText.value = state.subtitle;
+      if (inputs.showSubtitle) inputs.showSubtitle.checked = state.showSubtitle;
+      if (inputs.subFontSelect) inputs.subFontSelect.value = state.subFont;
+      if (inputs.subSize) inputs.subSize.value = state.subSize;
+      if (inputs.subSizeInput) inputs.subSizeInput.value = state.subSize;
+      if (inputs.subColorPicker) inputs.subColorPicker.value = state.subTextColor;
+      if (inputs.subTextColorHex) inputs.subTextColorHex.textContent = (state.subTextColor || '#FFFFFF').toUpperCase();
+      if (inputs.badgeText) inputs.badgeText.value = state.badge;
+      if (inputs.showBadge) inputs.showBadge.checked = state.showBadge;
+      if (inputs.badgeSize) inputs.badgeSize.value = state.badgeSize;
+      if (inputs.badgeSizeInput) inputs.badgeSizeInput.value = state.badgeSize;
+      if (inputs.badgeColorPicker) inputs.badgeColorPicker.value = state.badgeBgColor;
+      if (inputs.badgeColorHex) inputs.badgeColorHex.textContent = (state.badgeBgColor || '#EF4444').toUpperCase();
+
+      if (inputs.coverIssueTagText) inputs.coverIssueTagText.value = state.coverIssueTag;
+      if (inputs.coverCuratorText) inputs.coverCuratorText.value = state.coverCurator;
+      if (inputs.coverFrameColorPicker) inputs.coverFrameColorPicker.value = state.coverFrameColor;
+      if (inputs.coverStickerNumberText) inputs.coverStickerNumberText.value = state.coverStickerNumber;
+      if (inputs.coverStickerCategoryText) inputs.coverStickerCategoryText.value = state.coverStickerCategory;
+      if (inputs.coverStickerSubText) inputs.coverStickerSubText.value = state.coverStickerSub;
+      if (inputs.coverStickerColorPicker) inputs.coverStickerColorPicker.value = state.coverStickerColor;
+      document.querySelectorAll('.cover-style-btn').forEach(b => {
+        const isSelected = b.dataset.coverStyle === state.coverDesignPreset;
+        b.classList.toggle('border-indigo-500', isSelected);
+        b.classList.toggle('bg-indigo-500/10', isSelected);
+        b.classList.toggle('text-indigo-300', isSelected);
+        b.classList.toggle('border-slate-800', !isSelected);
+        b.classList.toggle('bg-slate-900', !isSelected);
+        b.classList.toggle('text-slate-400', !isSelected);
+      });
+      if (inputs.coverMagazineOptions) inputs.coverMagazineOptions.classList.toggle('hidden', state.coverDesignPreset !== 'magazine-frame');
+      if (inputs.coverStickerOptions) inputs.coverStickerOptions.classList.toggle('hidden', state.coverDesignPreset !== 'sticker-bold');
+
+      if (inputs.showBodyTopBar) inputs.showBodyTopBar.checked = state.showBodyTopBar;
+      if (inputs.bodyCategoryText) inputs.bodyCategoryText.value = state.bodyCategory;
+      if (inputs.bodyPageText) inputs.bodyPageText.value = state.bodyPage;
+      if (inputs.bodyCardOpacity) inputs.bodyCardOpacity.value = Math.round(state.bodyCardOpacity * 100);
+      if (inputs.bodyCardOpacityInput) inputs.bodyCardOpacityInput.value = Math.round(state.bodyCardOpacity * 100);
+      if (inputs.bodyTitleText) inputs.bodyTitleText.value = state.bodyTitle;
+      if (inputs.bodyTitleFontSelect) inputs.bodyTitleFontSelect.value = state.bodyTitleFont;
+      if (inputs.bodyAccentPicker) inputs.bodyAccentPicker.value = state.bodyAccentColor;
+      if (inputs.bodyTitleSize) inputs.bodyTitleSize.value = state.bodyTitleSize;
+      if (inputs.bodyTitleSizeInput) inputs.bodyTitleSizeInput.value = state.bodyTitleSize;
+      if (inputs.bodyDescText) inputs.bodyDescText.value = state.bodyDesc;
+      if (inputs.bodyDescSize) inputs.bodyDescSize.value = state.bodyDescSize;
+      if (inputs.bodyDescSizeInput) inputs.bodyDescSizeInput.value = state.bodyDescSize;
+      if (inputs.bodyLineHeight) inputs.bodyLineHeight.value = state.bodyLineHeight;
+      if (inputs.bodyLineHeightInput) inputs.bodyLineHeightInput.value = state.bodyLineHeight;
+      if (inputs.bodyDescColorPicker) inputs.bodyDescColorPicker.value = state.bodyDescColor;
+      if (inputs.bodyDescColorHex) inputs.bodyDescColorHex.textContent = (state.bodyDescColor || '#E2E8F0').toUpperCase();
+      if (inputs.showBodyQuote) inputs.showBodyQuote.checked = state.showBodyQuote;
+      if (inputs.bodyQuoteText) inputs.bodyQuoteText.value = state.bodyQuote;
+      if (inputs.bodyQuoteAuthor) inputs.bodyQuoteAuthor.value = state.bodyQuoteAuthor;
+
+      document.querySelectorAll('.body-card-style-btn').forEach(b => {
+        const isSelected = b.dataset.style === state.bodyCardStyle;
+        b.classList.toggle('border-indigo-500', isSelected);
+        b.classList.toggle('bg-indigo-500/10', isSelected);
+        b.classList.toggle('text-indigo-300', isSelected);
+        b.classList.toggle('border-slate-800', !isSelected);
+        b.classList.toggle('bg-slate-900', !isSelected);
+        b.classList.toggle('text-slate-400', !isSelected);
+      });
+      if (inputs.bodyStepOptions) inputs.bodyStepOptions.classList.toggle('hidden', state.bodyCardStyle !== 'step');
+      if (inputs.bodyStepBadgeText) inputs.bodyStepBadgeText.value = state.bodyStepBadge;
+      if (inputs.bodyItem1TitleText) inputs.bodyItem1TitleText.value = state.bodyItem1Title;
+      if (inputs.bodyItem1DescText) inputs.bodyItem1DescText.value = state.bodyItem1Desc;
+      if (inputs.bodyItem2TitleText) inputs.bodyItem2TitleText.value = state.bodyItem2Title;
+      if (inputs.bodyItem2DescText) inputs.bodyItem2DescText.value = state.bodyItem2Desc;
+      if (inputs.bodyItem3TitleText) inputs.bodyItem3TitleText.value = state.bodyItem3Title;
+      if (inputs.bodyItem3DescText) inputs.bodyItem3DescText.value = state.bodyItem3Desc;
+
+      if (inputs.showEndTag) inputs.showEndTag.checked = state.showEndTag;
+      if (inputs.endTagText) inputs.endTagText.value = state.endTag;
+      if (inputs.endTitleText) inputs.endTitleText.value = state.endTitle;
+      if (inputs.endTitleFontSelect) inputs.endTitleFontSelect.value = state.endTitleFont;
+      if (inputs.endTitleSize) inputs.endTitleSize.value = state.endTitleSize;
+      if (inputs.endTitleSizeInput) inputs.endTitleSizeInput.value = state.endTitleSize;
+      if (inputs.endTitleColorPicker) inputs.endTitleColorPicker.value = state.endTitleColor;
+      if (inputs.endTitleColorHex) inputs.endTitleColorHex.textContent = (state.endTitleColor || '#FFFFFF').toUpperCase();
+      if (inputs.endDescText) inputs.endDescText.value = state.endDesc;
+      if (inputs.endDescSize) inputs.endDescSize.value = state.endDescSize;
+      if (inputs.endDescSizeInput) inputs.endDescSizeInput.value = state.endDescSize;
+      if (inputs.endCtaText) inputs.endCtaText.value = state.endCtaText;
+      if (inputs.endCtaColorPicker) inputs.endCtaColorPicker.value = state.endCtaColor;
+      if (inputs.endCtaColorHex) inputs.endCtaColorHex.textContent = (state.endCtaColor || '#6366F1').toUpperCase();
+      if (inputs.showEndFooter) inputs.showEndFooter.checked = state.showEndFooter;
+      if (inputs.endHandleText) inputs.endHandleText.value = state.endHandle;
+      if (inputs.endSaveHookText) inputs.endSaveHookText.value = state.endSaveHook;
+      if (inputs.endSaveCardTitleText) inputs.endSaveCardTitleText.value = state.endSaveCardTitle;
+      if (inputs.endSaveCardDescText) inputs.endSaveCardDescText.value = state.endSaveCardDesc;
+      if (inputs.endSaveSubCtaText) inputs.endSaveSubCtaText.value = state.endSaveSubCta;
+      if (inputs.endNextBadgeText) inputs.endNextBadgeText.value = state.endNextBadge;
+      if (inputs.endNextTitleText) inputs.endNextTitleText.value = state.endNextTitle;
+      if (inputs.endNextDateText) inputs.endNextDateText.value = state.endNextDate;
+      if (inputs.endNextNoticeText) inputs.endNextNoticeText.value = state.endNextNotice;
+
+      document.querySelectorAll('.end-style-btn').forEach(b => {
+        const isSelected = b.dataset.endStyle === state.endingDesignPreset;
+        b.classList.toggle('border-indigo-500', isSelected);
+        b.classList.toggle('bg-indigo-500/10', isSelected);
+        b.classList.toggle('text-indigo-300', isSelected);
+        b.classList.toggle('border-slate-800', !isSelected);
+        b.classList.toggle('bg-slate-900', !isSelected);
+        b.classList.toggle('text-slate-400', !isSelected);
+      });
+      if (inputs.endSaveOptions) inputs.endSaveOptions.classList.toggle('hidden', state.endingDesignPreset !== 'save-reminder');
+      if (inputs.endSeriesOptions) inputs.endSeriesOptions.classList.toggle('hidden', state.endingDesignPreset !== 'series-next');
+
+      document.querySelectorAll('.end-action-style-btn').forEach(b => {
+        const isSelected = b.dataset.style === state.endActionStyle;
+        b.classList.toggle('border-indigo-500', isSelected);
+        b.classList.toggle('bg-indigo-500/10', isSelected);
+        b.classList.toggle('text-indigo-300', isSelected);
+        b.classList.toggle('border-slate-800', !isSelected);
+        b.classList.toggle('bg-slate-900', !isSelected);
+        b.classList.toggle('text-slate-400', !isSelected);
+      });
+    }
+
+    function loadPageState(index) {
+      if (index < 0 || index >= pages.length) return;
+      saveCurrentPage();
+      activePageIndex = index;
+      const targetPage = pages[activePageIndex];
+      for (let k of pageKeys) {
+        if (targetPage[k] !== undefined) {
+          state[k] = targetPage[k];
+        }
+      }
+      syncAllInputsFromState();
+      updateSlideBar();
+      renderCanvas();
+    }
+
+    function updateSlideBar() {
+      const prevBtn = document.getElementById('prevSlideBtn');
+      const nextBtn = document.getElementById('nextSlideBtn');
+      const curNum = document.getElementById('currentSlideNum');
+      const totalNum = document.getElementById('totalSlideNum');
+      const badge = document.getElementById('currentSlideBadge');
+      const chipsContainer = document.getElementById('slideChipsContainer');
+
+      if (curNum) curNum.textContent = activePageIndex + 1;
+      if (totalNum) totalNum.textContent = pages.length;
+      const mobileBadge = document.getElementById('mobileSlideBadge');
+      if (mobileBadge) mobileBadge.textContent = `${activePageIndex + 1}/${pages.length}`;
+      if (typeof updateVaultCountBadges === 'function') updateVaultCountBadges();
+      if (prevBtn) prevBtn.disabled = (activePageIndex === 0);
+      if (nextBtn) nextBtn.disabled = (activePageIndex === pages.length - 1);
+
+      const curTemplate = state.templateMode || 'cover';
+      if (badge) {
+        if (curTemplate === 'cover') {
+          badge.textContent = '표지';
+          badge.className = 'ml-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+        } else if (curTemplate === 'body') {
+          badge.textContent = '본문';
+          badge.className = 'ml-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        } else {
+          badge.textContent = '마무리';
+          badge.className = 'ml-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+        }
+      }
+
+      if (chipsContainer) {
+        chipsContainer.innerHTML = '';
+        pages.forEach((p, idx) => {
+          const isActive = idx === activePageIndex;
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = `flex-shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+            isActive
+              ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md ring-2 ring-indigo-400 ring-offset-1 ring-offset-slate-900 scale-105'
+              : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/80 hover:text-white'
+          }`;
+
+          let icon = '🏷️';
+          let label = '표지';
+          if (p.templateMode === 'body') {
+            icon = '📄';
+            label = '본문';
+          } else if (p.templateMode === 'ending') {
+            icon = '🏁';
+            label = '마무리';
+          }
+
+          chip.innerHTML = `<span>${icon}</span> <span>${idx + 1}. ${label}</span>`;
+          chip.addEventListener('click', () => {
+            loadPageState(idx);
+          });
+          chipsContainer.appendChild(chip);
+        });
+
+        const activeChip = chipsContainer.children[activePageIndex];
+        if (activeChip && activeChip.scrollIntoView) {
+          activeChip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      }
+    }
+
+    function addPage(templateType) {
+      saveCurrentPage();
+      const newIndex = activePageIndex + 1;
+      const newPage = createPageTemplate(templateType || 'body', newIndex + 1, pages.length + 1);
+      if (state.image) newPage.image = state.image;
+      pages.splice(newIndex, 0, newPage);
+      autoRenumberBodyPages(false);
+      loadPageState(newIndex);
+      showToast(`새로운 ${templateType === 'cover' ? '표지' : templateType === 'ending' ? '마무리' : '본문'} 페이지가 추가되었습니다!`);
+    }
+
+    function duplicateCurrentPage() {
+      saveCurrentPage();
+      const current = pages[activePageIndex];
+      const cloned = JSON.parse(JSON.stringify(current, (key, value) => {
+        if (key === 'image') return undefined;
+        return value;
+      }));
+      cloned.image = current.image || state.image || null;
+      const newIndex = activePageIndex + 1;
+      pages.splice(newIndex, 0, cloned);
+      autoRenumberBodyPages(false);
+      loadPageState(newIndex);
+      showToast(`${newIndex + 1}번째 페이지로 복제되었습니다!`);
+    }
+
+    function deleteCurrentPage() {
+      if (pages.length <= 1) {
+        showToast('최소 1개 이상의 페이지가 유지되어야 합니다.');
+        return;
+      }
+      pages.splice(activePageIndex, 1);
+      if (activePageIndex >= pages.length) {
+        activePageIndex = pages.length - 1;
+      }
+      autoRenumberBodyPages(false);
+      loadPageState(activePageIndex);
+      showToast('해당 페이지가 삭제되었습니다.');
+    }
+
+    function moveCurrentPage(direction) {
+      const target = activePageIndex + direction;
+      if (target < 0 || target >= pages.length) return;
+      saveCurrentPage();
+      const temp = pages[activePageIndex];
+      pages[activePageIndex] = pages[target];
+      pages[target] = temp;
+      autoRenumberBodyPages(false);
+      loadPageState(target);
+      showToast(`페이지 순서가 ${target + 1}번째로 이동되었습니다.`);
+    }
+
+    function autoRenumberBodyPages(showFeedback = true) {
+      const total = pages.length;
+      pages.forEach((p, idx) => {
+        if (p.templateMode === 'body') {
+          p.bodyPage = `${String(idx + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+        }
+      });
+      if (pages[activePageIndex] && pages[activePageIndex].templateMode === 'body') {
+        state.bodyPage = pages[activePageIndex].bodyPage;
+        if (inputs.bodyPageText) inputs.bodyPageText.value = state.bodyPage;
+      }
+      if (showFeedback) {
+        showToast(`전체 ${total}장 기준 페이지 번호가 자동 동기화되었습니다.`);
+        renderCanvas();
+      }
+    }
+
+    async function downloadAllPagesZip() {
+      saveCurrentPage();
+      const originalIndex = activePageIndex;
+      const total = pages.length;
+
+      showToast(`총 ${total}장의 슬라이드 렌더링을 시작합니다...`);
+
+      try {
+        const hasJSZip = typeof JSZip !== 'undefined';
+        const zip = hasJSZip ? new JSZip() : null;
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const folder = zip ? zip.folder(`카드뉴스_${timestamp}`) : null;
+
+        for (let i = 0; i < total; i++) {
+          const p = pages[i];
+          for (let k of pageKeys) {
+            if (p[k] !== undefined) state[k] = p[k];
+          }
+          renderCanvas();
+
+          await new Promise(res => setTimeout(res, 60));
+
+          const dataUrl = canvas.toDataURL('image/png', 1.0);
+          const typeName = p.templateMode === 'cover' ? '표지' : p.templateMode === 'ending' ? '마무리' : '본문';
+          const fileName = `${String(i + 1).padStart(2, '0')}_${typeName}.png`;
+
+          if (folder) {
+            const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+            folder.file(fileName, base64Data, { base64: true });
+          } else {
+            const a = document.createElement('a');
+            a.download = fileName;
+            a.href = dataUrl;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            await new Promise(res => setTimeout(res, 200));
+          }
+        }
+
+        if (zip) {
+          showToast('ZIP 파일로 압축 중입니다...');
+          const content = await zip.generateAsync({ type: 'blob' });
+          const url = URL.createObjectURL(content);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `카드뉴스_전체_${timestamp}.zip`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+          showToast(`전체 ${total}장 카드뉴스가 ZIP 파일로 다운로드되었습니다! 🎉`);
+        } else {
+          showToast(`전체 ${total}장 이미지가 순차 다운로드되었습니다! 🎉`);
+        }
+
+      } catch (err) {
+        showToast('일괄 다운로드 중 오류 발생: ' + (err.message || ''));
+      } finally {
+        loadPageState(originalIndex);
+      }
+    }
+
+    function bindSlideControlEvents() {
+      const prevBtn = document.getElementById('prevSlideBtn');
+      const nextBtn = document.getElementById('nextSlideBtn');
+      const addSlideBtn = document.getElementById('addSlideBtn');
+      const addSlideMenu = document.getElementById('addSlideMenu');
+      const dupBtn = document.getElementById('dupSlideBtn');
+      const deleteBtn = document.getElementById('deleteSlideBtn');
+      const movePrevBtn = document.getElementById('movePrevSlideBtn');
+      const moveNextBtn = document.getElementById('moveNextSlideBtn');
+      const autoRenumberBtn = document.getElementById('autoRenumberBtn');
+      const downloadAllBtn = document.getElementById('downloadAllBtn');
+
+      if (prevBtn) prevBtn.addEventListener('click', () => loadPageState(activePageIndex - 1));
+      if (nextBtn) nextBtn.addEventListener('click', () => loadPageState(activePageIndex + 1));
+
+      if (addSlideBtn && addSlideMenu) {
+        addSlideBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          addSlideMenu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => {
+          addSlideMenu.classList.add('hidden');
+        });
+        document.querySelectorAll('[data-add-template]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addPage(btn.dataset.addTemplate);
+            addSlideMenu.classList.add('hidden');
+          });
+        });
+      }
+
+      if (dupBtn) dupBtn.addEventListener('click', duplicateCurrentPage);
+      if (deleteBtn) deleteBtn.addEventListener('click', deleteCurrentPage);
+      if (movePrevBtn) movePrevBtn.addEventListener('click', () => moveCurrentPage(-1));
+      if (moveNextBtn) moveNextBtn.addEventListener('click', () => moveCurrentPage(1));
+      if (autoRenumberBtn) autoRenumberBtn.addEventListener('click', () => autoRenumberBodyPages(true));
+      if (downloadAllBtn) downloadAllBtn.addEventListener('click', downloadAllPagesZip);
+
+      // Mobile Mode Switcher (Editor vs Preview)
+      const mobileTabEditorBtn = document.getElementById('mobileTabEditorBtn');
+      const mobileTabPreviewBtn = document.getElementById('mobileTabPreviewBtn');
+      const editorSidebar = document.getElementById('editorSidebar');
+      const previewWorkspace = document.getElementById('previewWorkspace');
+      const floatingPreviewBtn = document.getElementById('floatingPreviewBtn');
+
+      function switchMobileView(view) {
+        if (view === 'editor') {
+          if (mobileTabEditorBtn) {
+            mobileTabEditorBtn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-indigo-600 text-white shadow-sm';
+          }
+          if (mobileTabPreviewBtn) {
+            mobileTabPreviewBtn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-slate-800/90 text-slate-300 hover:text-white';
+          }
+          if (editorSidebar) {
+            editorSidebar.classList.remove('hidden');
+          }
+          if (previewWorkspace) {
+            previewWorkspace.classList.add('hidden');
+            previewWorkspace.classList.remove('flex');
+          }
+        } else {
+          if (mobileTabPreviewBtn) {
+            mobileTabPreviewBtn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-indigo-600 text-white shadow-sm';
+          }
+          if (mobileTabEditorBtn) {
+            mobileTabEditorBtn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-slate-800/90 text-slate-300 hover:text-white';
+          }
+          if (editorSidebar) {
+            editorSidebar.classList.add('hidden');
+          }
+          if (previewWorkspace) {
+            previewWorkspace.classList.remove('hidden');
+            previewWorkspace.classList.add('flex');
+          }
+          // Trigger render & fit when showing preview on mobile
+          requestAnimationFrame(() => {
+            fitCanvasToViewport();
+            renderCanvas();
+          });
+        }
+      }
+
+      if (mobileTabEditorBtn) {
+        mobileTabEditorBtn.addEventListener('click', () => switchMobileView('editor'));
+      }
+      if (mobileTabPreviewBtn) {
+        mobileTabPreviewBtn.addEventListener('click', () => switchMobileView('preview'));
+      }
+      if (floatingPreviewBtn) {
+        floatingPreviewBtn.addEventListener('click', () => switchMobileView('preview'));
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'ArrowLeft' && e.altKey) {
+          if (activePageIndex > 0) loadPageState(activePageIndex - 1);
+        } else if (e.key === 'ArrowRight' && e.altKey) {
+          if (activePageIndex < pages.length - 1) loadPageState(activePageIndex + 1);
+        }
+      });
+    }
+
+    function initMultiPageEngine() {
+      const defaultCover = createPageTemplate('cover', 1, 3);
+      const defaultBody = createPageTemplate('body', 2, 3);
+      const defaultEnding = createPageTemplate('ending', 3, 3);
+
+      pages = [defaultCover, defaultBody, defaultEnding];
+      activePageIndex = 0;
+
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
+        <defs>
+          <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1e1b4b"/>
+            <stop offset="50%" stop-color="#0f172a"/>
+            <stop offset="100%" stop-color="#020617"/>
+          </linearGradient>
+          <linearGradient id="glowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <rect width="1080" height="1350" fill="url(#bgGrad)"/>
+        <circle cx="850" cy="520" r="320" fill="#dc2626" opacity="0.15"/>
+        <circle cx="850" cy="620" r="320" fill="#2563eb" opacity="0.15"/>
+        <rect x="0" y="0" width="1080" height="240" fill="url(#glowGrad)"/>
+        <g opacity="0.45" fill="#94a3b8">
+          <circle cx="340" cy="380" r="110"/>
+          <path d="M200,680 C200,520 250,470 340,470 C430,470 480,520 480,680 Z"/>
+          <circle cx="740" cy="400" r="105"/>
+          <path d="M600,700 C600,540 650,490 740,490 C830,490 880,540 880,700 Z"/>
+        </g>
+        <text x="540" y="580" fill="#e2e8f0" font-family="sans-serif" font-size="28" font-weight="bold" text-anchor="middle">여기를 클릭하거나 사진을 업로드하세요</text>
+        <text x="540" y="625" fill="#64748b" font-family="sans-serif" font-size="20" text-anchor="middle">보도자료 사진, 인물 사진, 뉴스 캡처 등</text>
+      </svg>`;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        pages[0].image = img;
+        pages[1].image = img;
+        pages[2].image = img;
+        loadPageState(0);
+      };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+
+      bindSlideControlEvents();
+    }
+
+    // ==========================================
+    // Unified Vault Engine: Style Presets & Full Deck (전체 페이지 구성) Management
+    // ==========================================
+    const PRO_PRESET_KEYS = [
+      // 1. Photo adjustments & filters
+      'brightness', 'contrast', 'saturate', 'blur', 'vignette',
+      'tintColor', 'tintOpacity', 'flipH', 'flipV', 'filterPreset',
+
+      // 2. Gradients & Shadow Overlays
+      'gradColor', 'gradIntensity', 'gradHeight',
+
+      // 3. Credit / Source Notation
+      'showCredit', 'creditPos', 'creditStyle', 'creditSize', 'creditOpacity',
+
+      // 4. Headline Typography & Styling
+      'headlineFont', 'headlineAlign', 'headlineVPos', 'headlineOffsetY',
+      'headlineColor', 'headlineStyle', 'headlineSize', 'headlineLineHeight',
+
+      // 5. Subtitle Styling
+      'showSubtitle', 'subFont', 'subPosition', 'subTextColor', 'subSize',
+
+      // 6. Badge & Tag Styling
+      'showBadge', 'badgeSize', 'badgeBgColor', 'badgeTextColor',
+      'badgeStyle', 'badgeRadius', 'badgePosition',
+
+      // 7. Cover Specific Style Presets
+      'coverDesignPreset', 'coverFrameColor', 'coverStickerColor',
+
+      // 8. Body Specific Style Presets
+      'showBodyTopBar', 'bodyCardStyle', 'bodyCardOpacity',
+      'bodyTitleFont', 'bodyAccentColor', 'bodyTitleSize',
+      'bodyDescSize', 'bodyLineHeight', 'bodyDescColor', 'showBodyQuote',
+
+      // 9. Ending Specific Style Presets
+      'endingDesignPreset', 'endTitleFont', 'endTitleSize',
+      'endTitleColor', 'endDescSize', 'endActionStyle', 'endCtaColor',
+      'showEndTag', 'showEndFooter'
+    ];
+
+    const DEFAULT_PRESETS = [
+      {
+        id: 'preset-dark-modern',
+        name: '📌 모던 시사 & 브리핑 (Dark Modern)',
+        isBuiltIn: true,
+        data: {
+          headlineFont: "'Pretendard', sans-serif",
+          headlineAlign: 'left',
+          headlineVPos: 'bottom',
+          headlineOffsetY: 0,
+          headlineColor: '#ffffff',
+          headlineStyle: 'soft-shadow',
+          headlineSize: 68,
+          headlineLineHeight: 1.18,
+          showSubtitle: true,
+          subFont: 'inherit',
+          subPosition: 'bottom-opposite',
+          subTextColor: '#ffffff',
+          subSize: 32,
+          showBadge: true,
+          badgeSize: 26,
+          badgeBgColor: '#ef4444',
+          badgeTextColor: '#ffffff',
+          badgeStyle: 'solid',
+          badgeRadius: 'pill',
+          badgePosition: 'above-headline',
+          gradColor: '#000000',
+          gradIntensity: 0.85,
+          gradHeight: 0.42,
+          showCredit: true,
+          creditPos: 'top-left',
+          creditStyle: 'minimal',
+          creditSize: 20,
+          creditOpacity: 85,
+          brightness: 100,
+          contrast: 105,
+          saturate: 100,
+          blur: 0,
+          vignette: 15,
+          tintColor: '#0f172a',
+          tintOpacity: 0,
+          coverDesignPreset: 'editorial',
+          bodyCardStyle: 'glass',
+          bodyCardOpacity: 0.85,
+          bodyAccentColor: '#6366f1',
+          endingDesignPreset: 'social-action',
+          endActionStyle: 'insta',
+          endCtaColor: '#6366f1'
+        }
+      },
+      {
+        id: 'preset-editorial-serif',
+        name: '📰 정통 언론 에디토리얼 (Editorial Serif)',
+        isBuiltIn: true,
+        data: {
+          headlineFont: "'Chosunilbo_myungjo', serif",
+          headlineAlign: 'center',
+          headlineVPos: 'middle',
+          headlineOffsetY: -10,
+          headlineColor: '#ffffff',
+          headlineStyle: 'soft-shadow',
+          headlineSize: 64,
+          headlineLineHeight: 1.25,
+          showSubtitle: true,
+          subFont: "'Chosunilbo_myungjo', serif",
+          subPosition: 'below-headline',
+          subTextColor: '#e2e8f0',
+          subSize: 30,
+          showBadge: true,
+          badgeSize: 24,
+          badgeBgColor: '#1e293b',
+          badgeTextColor: '#93c5fd',
+          badgeStyle: 'outline',
+          badgeRadius: 'square',
+          badgePosition: 'above-headline',
+          gradColor: '#090d16',
+          gradIntensity: 0.90,
+          gradHeight: 0.52,
+          showCredit: true,
+          creditPos: 'bottom-left',
+          creditStyle: 'dark-pill',
+          creditSize: 18,
+          creditOpacity: 90,
+          brightness: 95,
+          contrast: 110,
+          saturate: 85,
+          blur: 0,
+          vignette: 25,
+          tintColor: '#0f172a',
+          tintOpacity: 10,
+          coverDesignPreset: 'magazine-frame',
+          coverFrameColor: '#ffffff',
+          bodyCardStyle: 'split',
+          bodyAccentColor: '#3b82f6',
+          endingDesignPreset: 'social-action',
+          endActionStyle: 'both',
+          endCtaColor: '#3b82f6'
+        }
+      },
+      {
+        id: 'preset-neon-tech',
+        name: '⚡ 네온 테크 & 트렌드 (Neon Tech)',
+        isBuiltIn: true,
+        data: {
+          headlineFont: "'Pretendard', sans-serif",
+          headlineAlign: 'left',
+          headlineVPos: 'bottom',
+          headlineOffsetY: 0,
+          headlineColor: '#ffffff',
+          headlineStyle: 'deep-shadow',
+          headlineSize: 70,
+          headlineLineHeight: 1.15,
+          showSubtitle: true,
+          subFont: 'inherit',
+          subPosition: 'below-headline',
+          subTextColor: '#34d399',
+          subSize: 32,
+          showBadge: true,
+          badgeSize: 26,
+          badgeBgColor: '#10b981',
+          badgeTextColor: '#022c22',
+          badgeStyle: 'solid',
+          badgeRadius: 'pill',
+          badgePosition: 'above-headline',
+          gradColor: '#030712',
+          gradIntensity: 0.92,
+          gradHeight: 0.46,
+          showCredit: true,
+          creditPos: 'top-right',
+          creditStyle: 'accent-bar',
+          creditSize: 20,
+          creditOpacity: 90,
+          brightness: 105,
+          contrast: 115,
+          saturate: 120,
+          blur: 0,
+          vignette: 20,
+          tintColor: '#064e3b',
+          tintOpacity: 10,
+          coverDesignPreset: 'sticker-bold',
+          coverStickerColor: '#facc15',
+          bodyCardStyle: 'step',
+          bodyAccentColor: '#10b981',
+          endingDesignPreset: 'social-action',
+          endActionStyle: 'cta',
+          endCtaColor: '#10b981'
+        }
+      },
+      {
+        id: 'preset-warm-magazine',
+        name: '🌿 웜 & 감성 매거진 (Warm Pastel)',
+        isBuiltIn: true,
+        data: {
+          headlineFont: "'Pretendard', sans-serif",
+          headlineAlign: 'center',
+          headlineVPos: 'middle',
+          headlineOffsetY: 0,
+          headlineColor: '#ffffff',
+          headlineStyle: 'soft-shadow',
+          headlineSize: 62,
+          headlineLineHeight: 1.25,
+          showSubtitle: true,
+          subFont: 'inherit',
+          subPosition: 'below-headline',
+          subTextColor: '#fed7aa',
+          subSize: 28,
+          showBadge: true,
+          badgeSize: 24,
+          badgeBgColor: '#f97316',
+          badgeTextColor: '#ffffff',
+          badgeStyle: 'solid',
+          badgeRadius: 'pill',
+          badgePosition: 'above-headline',
+          gradColor: '#1c1917',
+          gradIntensity: 0.82,
+          gradHeight: 0.44,
+          showCredit: true,
+          creditPos: 'bottom-right',
+          creditStyle: 'light-pill',
+          creditSize: 18,
+          creditOpacity: 90,
+          brightness: 102,
+          contrast: 100,
+          saturate: 105,
+          blur: 0,
+          vignette: 15,
+          tintColor: '#78350f',
+          tintOpacity: 15,
+          coverDesignPreset: 'editorial',
+          bodyCardStyle: 'glass',
+          bodyCardOpacity: 0.80,
+          bodyAccentColor: '#f97316',
+          endingDesignPreset: 'save-reminder',
+          endActionStyle: 'insta',
+          endCtaColor: '#f97316'
+        }
+      }
+    ];
+
+    const PRESETS_STORAGE_KEY = 'cardnews_saved_pro_presets';
+
+    // ==========================================
+    // Multi-Page Full Deck Configurations (전체 페이지 덱 템플릿)
+    // ==========================================
+    const DECKS_STORAGE_KEY = 'cardnews_saved_decks';
+
+    const DEFAULT_DECKS = [
+      {
+        id: 'deck-quick-3',
+        name: '📘 3장 퀵 서머리 팩 (표지 1 + 본문 1 + 엔딩 1)',
+        pageCount: 3,
+        ratio: '4:5',
+        isBuiltIn: true,
+        pages: [
+          {
+            templateMode: 'cover',
+            coverDesignPreset: 'editorial',
+            headline: '2026 트렌드 이슈\n핵심 3분 요약',
+            subtitle: '바쁜 일상 속 꼭 알아야 할 오늘의 핵심 브리핑',
+            badge: 'QUICK SUMMARY',
+            badgeBgColor: '#ef4444',
+            credit: '배경: 서울경제 권욱 기자',
+            creditPos: 'top-left',
+            creditStyle: 'minimal',
+            headlineFont: "'Pretendard', sans-serif",
+            headlineColor: '#ffffff',
+            headlineSize: 68
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: '💡 핵심 요약 & 트렌드',
+            bodyPage: '02 / 03',
+            bodyCardStyle: 'glass',
+            bodyCardOpacity: 0.85,
+            bodyAccentColor: '#6366f1',
+            bodyTitle: '01. 대변혁의 서막,\n새로운 표준의 등장',
+            bodyDesc: '기술과 라이프스타일의 융합으로 전례 없는 속도의 변화가 시작되었습니다.\n\n불확실성의 시대일수록 본질에 집중하는 전략적 판단이 더욱 중요해집니다.',
+            showBodyQuote: true,
+            bodyQuote: '"변화의 물결 속에서 기회를 잡는 자가 미래를 정의한다."',
+            bodyQuoteAuthor: '— 2026 글로벌 리포트'
+          },
+          {
+            templateMode: 'ending',
+            endingDesignPreset: 'social-action',
+            endActionStyle: 'insta',
+            endTitle: '오늘의 인사이트,\n어떠셨나요?',
+            endDesc: '유익한 정보였다면 지금 [저장 📌]해두고,\n동료와 친구들에게 공유해보세요!',
+            endCtaText: '지금 저장하고 프로필 링크 확인하기 ➔',
+            endCtaColor: '#6366f1'
+          }
+        ]
+      },
+      {
+        id: 'deck-standard-5',
+        name: '📑 5장 표준 시사 브리핑 팩 (표지 1 + 본문 3 + 엔딩 1)',
+        pageCount: 5,
+        ratio: '4:5',
+        isBuiltIn: true,
+        pages: [
+          {
+            templateMode: 'cover',
+            coverDesignPreset: 'editorial',
+            headline: '2026년 9월 4주차\n주간 시사 브리핑',
+            subtitle: '북중미 정상회담부터 주요 현안 쟁점 총정리',
+            badge: 'ISSUE BRIEFING',
+            badgeBgColor: '#ef4444',
+            credit: '배경: 서울경제 권욱 기자',
+            creditPos: 'top-left'
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: '🔍 쟁점 1 · 글로벌 동향',
+            bodyPage: '02 / 05',
+            bodyCardStyle: 'glass',
+            bodyAccentColor: '#6366f1',
+            bodyTitle: '01. 급변하는 국제 정세와\n경제 안보의 새로운 지형',
+            bodyDesc: '글로벌 공급망 재편과 통상 질서의 다변화로 각국 정부의 발걸음이 빨라지고 있습니다.\n\n외교 및 경제적 실리를 동시에 확보하기 위한 치열한 물밑 교섭이 진행 중입니다.',
+            showBodyQuote: true,
+            bodyQuote: '"외교는 국익을 지키는 가장 강력한 방패이자 칼이다."',
+            bodyQuoteAuthor: '— 외교안보 정책 연구소'
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: '📋 쟁점 2 · 3대 핵심 포인트',
+            bodyPage: '03 / 05',
+            bodyCardStyle: 'step',
+            bodyAccentColor: '#6366f1',
+            bodyStepBadge: 'KEY 03',
+            bodyItem1Title: '01. 통상 조약 개정 협상 돌입',
+            bodyItem1Desc: '관세 및 비관세 장벽 완화를 위한 실무 협의체가 공식 출범했습니다.',
+            bodyItem2Title: '02. 에너지 및 핵심 원자재 수급',
+            bodyItem2Desc: '특정국 의존도를 낮추기 위한 다변화 로드맵이 발표되었습니다.',
+            bodyItem3Title: '03. 국내 산업계 긴급 지원 패키지',
+            bodyItem3Desc: '중소/중견 기업을 위한 금융 및 기술 지원 예산이 즉시 배정됩니다.'
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: '💡 쟁점 3 · 향후 전망',
+            bodyPage: '04 / 05',
+            bodyCardStyle: 'split',
+            bodyAccentColor: '#3b82f6',
+            bodyTitle: '03. 우리가 주목해야 할\n결정적 순간들',
+            bodyDesc: '전문가들은 이번 조치가 단기적 충격에 그치지 않고 중장기 구조 개혁의 신호탄이 될 것으로 전망합니다.\n\n선제적 리스크 관리와 기회 선점이 그 어느 때보다 절실한 시점입니다.',
+            showBodyQuote: true,
+            bodyQuote: '"준비된 자에게만 위기는 곧 도약의 발판이 된다."',
+            bodyQuoteAuthor: '— 2026 미래전략포럼'
+          },
+          {
+            templateMode: 'ending',
+            endingDesignPreset: 'series-next',
+            endTitle: '여러분의 의견을\n댓글로 들려주세요!',
+            endDesc: '이번 이슈에 대한 다양한 생각과 관점을 환영합니다.\n다음 주 목요일 더 깊이 있는 분석으로 찾아옵니다.',
+            endNextBadge: 'NEXT ISSUE PREVIEW',
+            endNextTitle: 'VOL. 10 ➔ 2026 하반기 경제 전망과 실전 투자 전략',
+            endNextDate: '📅 다음 주 목요일 저녁 7시 발행',
+            endNextNotice: '궁금한 질문이나 다뤄줬으면 하는 주제는 댓글로 남겨주세요!'
+          }
+        ]
+      },
+      {
+        id: 'deck-tips-4',
+        name: '🌟 4장 실전 꿀팁 & 테크 팩 (표지 1 + 본문 2 + 엔딩 1)',
+        pageCount: 4,
+        ratio: '4:5',
+        isBuiltIn: true,
+        pages: [
+          {
+            templateMode: 'cover',
+            coverDesignPreset: 'sticker-bold',
+            coverStickerNumber: 'TIP 01',
+            coverStickerCategory: 'AI & TECH',
+            coverStickerSub: '업무 속도 10배 높이기 ➔',
+            coverStickerColor: '#facc15',
+            headline: 'AI 에이전트로 끝내는\n실전 업무 자동화 꿀팁',
+            subtitle: '칼퇴를 부르는 필수 프롬프트 & 툴 완벽 가이드',
+            badge: 'PRACTICAL TIPS',
+            badgeBgColor: '#10b981',
+            badgeTextColor: '#022c22'
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: '🛠️ 실전 가이드 · STEP 01',
+            bodyPage: '02 / 04',
+            bodyCardStyle: 'step',
+            bodyAccentColor: '#10b981',
+            bodyStepBadge: 'STEP 01',
+            bodyItem1Title: '01. 반복 루틴 문서 자동 요약',
+            bodyItem1Desc: '매일 들어오는 이메일과 회의록을 10초 만에 3줄 브리핑으로 변환합니다.',
+            bodyItem2Title: '02. 데이터 추출 및 엑셀 정리',
+            bodyItem2Desc: '비정형 텍스트에서 숫자와 키워드를 뽑아 정형 스프레드시트로 자동 배치합니다.',
+            bodyItem3Title: '03. 카드뉴스 & 슬라이드 초안 제작',
+            bodyItem3Desc: '기획서 한 장으로 인스타 카드뉴스 5장 구성을 원클릭으로 설계합니다.'
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: '💡 핵심 노하우 · STEP 02',
+            bodyPage: '03 / 04',
+            bodyCardStyle: 'glass',
+            bodyAccentColor: '#10b981',
+            bodyTitle: '02. 놓치기 쉬운\n3가지 프롬프트 원칙',
+            bodyDesc: '역할을 명확히 부여하고, 구체적인 출력 형식을 지정하며, 예시(Few-shot)를 한 가지만 제시해도 결과물의 품질이 극적으로 향상됩니다.',
+            showBodyQuote: true,
+            bodyQuote: '"프롬프트가 명확할수록 AI의 답변은 예리해진다."',
+            bodyQuoteAuthor: '— 프롬프트 엔지니어링 실전 핸드북'
+          },
+          {
+            templateMode: 'ending',
+            endingDesignPreset: 'save-reminder',
+            endActionStyle: 'insta',
+            endCtaColor: '#10b981',
+            endTitle: '필요할 때 바로 꺼내보려면\n지금 [저장 📌]',
+            endSaveCardTitle: '나중에 찾으려면 늦습니다!',
+            endSaveCardDesc: '인스타그램 보관함에 쏙 넣어두고 실무에서 바로 꺼내 써보세요.',
+            endSaveSubCta: '프로필 링크에서 실전 템플릿 무료 다운로드 ➔'
+          }
+        ]
+      },
+      {
+        id: 'deck-magazine-6',
+        name: '🎨 6장 심층 매거진 기획 팩 (표지 1 + 본문 4 + 엔딩 1)',
+        pageCount: 6,
+        ratio: '4:5',
+        isBuiltIn: true,
+        pages: [
+          {
+            templateMode: 'cover',
+            coverDesignPreset: 'magazine-frame',
+            coverFrameColor: '#ffffff',
+            headlineFont: "'Chosunilbo_myungjo', serif",
+            headlineAlign: 'center',
+            headlineSize: 62,
+            headline: '도시의 밤,\n그리고 공간의 재발견',
+            subtitle: '현대인이 머무는 공간과 삶의 방식에 관한 고찰',
+            badge: 'SPECIAL REPORT',
+            badgeBgColor: '#1e293b',
+            badgeTextColor: '#93c5fd',
+            badgeStyle: 'outline',
+            creditPos: 'bottom-left',
+            creditStyle: 'dark-pill'
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: 'PROLOGUE · 프롤로그',
+            bodyPage: '02 / 06',
+            bodyCardStyle: 'split',
+            bodyTitleFont: "'Chosunilbo_myungjo', serif",
+            bodyAccentColor: '#3b82f6',
+            bodyTitle: '01. 익숙한 도시 속\n낯선 쉼표를 찾아서',
+            bodyDesc: '우리는 매일 같은 거리를 지나지만 그 공간이 품은 무수한 이야기들을 무심코 지나치곤 합니다.\n\n도시의 결을 천천히 짚어보는 것은 곧 나 자신의 속도를 되찾는 일입니다.'
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: 'INSIGHT 01 · 공간의 결',
+            bodyPage: '03 / 06',
+            bodyCardStyle: 'glass',
+            bodyTitleFont: "'Chosunilbo_myungjo', serif",
+            bodyAccentColor: '#3b82f6',
+            bodyTitle: '02. 빛과 그림자가\n빚어내는 건축의 미학',
+            bodyDesc: '오래된 건축물과 현대적 디자인이 조화를 이루는 곳마다 독특한 감성과 호흡이 깃들어 있습니다.\n\n머무는 것만으로도 영감을 주는 공간들의 공통점을 탐색합니다.'
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: 'INSIGHT 02 · 3대 특징',
+            bodyPage: '04 / 06',
+            bodyCardStyle: 'step',
+            bodyAccentColor: '#3b82f6',
+            bodyStepBadge: 'POINT',
+            bodyItem1Title: '01. 자연광을 품은 개방형 구조',
+            bodyItem1Desc: '시각적 답답함을 없애고 편안한 몰입을 유도합니다.',
+            bodyItem2Title: '02. 지역성과 역사의 보존',
+            bodyItem2Desc: '기존 터의 흔적을 살려 고유한 서사를 이어갑니다.',
+            bodyItem3Title: '03. 커뮤니티 중심 동선 설계',
+            bodyItem3Desc: '혼자서도, 함께여도 자연스러운 소통이 가능합니다.'
+          },
+          {
+            templateMode: 'body',
+            bodyCategory: 'EPILOGUE · 맺음',
+            bodyPage: '05 / 06',
+            bodyCardStyle: 'split',
+            bodyTitleFont: "'Chosunilbo_myungjo', serif",
+            bodyAccentColor: '#3b82f6',
+            bodyTitle: '04. 당신만의 공간을\n가꾸어 나간다는 것',
+            bodyDesc: '좋은 공간은 물리적 장소를 넘어 우리의 사고와 삶의 태도를 바꿉니다.\n\n오늘 밤, 당신이 가장 편안하게 숨 쉴 수 있는 곳은 어디인가요?'
+          },
+          {
+            templateMode: 'ending',
+            endingDesignPreset: 'social-action',
+            endTitleFont: "'Chosunilbo_myungjo', serif",
+            endTitle: '당신이 가장 아끼는\n공간은 어디인가요?',
+            endDesc: '소중한 사람과 함께 나누고 싶은 공간이 있다면\n댓글로 여러분의 숨은 아지트를 공유해주세요.',
+            endActionStyle: 'both',
+            endCtaColor: '#3b82f6',
+            endCtaText: '에디터 추천 공간 리스트 전문 보기 ➔'
+          }
+        ]
+      }
+    ];
+
+    function applyCanvasRatio(ratio) {
+      if (!ratio) return;
+      state.ratio = ratio;
+      if (ratio === '4:5') {
+        state.width = 1080;
+        state.height = 1350;
+      } else if (ratio === '1:1') {
+        state.width = 1080;
+        state.height = 1080;
+      } else if (ratio === '9:16') {
+        state.width = 1080;
+        state.height = 1920;
+      }
+      canvas.width = state.width;
+      canvas.height = state.height;
+      if (resolutionBadge) resolutionBadge.textContent = `${state.width} × ${state.height} px`;
+      document.querySelectorAll('.ratio-btn').forEach(b => {
+        const isCurrent = b.dataset.ratio === state.ratio;
+        b.classList.toggle('border-indigo-500', isCurrent);
+        b.classList.toggle('bg-indigo-500/10', isCurrent);
+        b.classList.toggle('text-indigo-300', isCurrent);
+        b.classList.toggle('border-slate-800', !isCurrent);
+        b.classList.toggle('bg-slate-800/60', !isCurrent);
+        b.classList.toggle('text-slate-400', !isCurrent);
+      });
+      fitCanvasToViewport();
+    }
+
+    function getUserPresets() {
+      try {
+        const stored = localStorage.getItem(PRESETS_STORAGE_KEY);
+        if (!stored) return [];
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.error('Failed to load user presets from localStorage', e);
+        return [];
+      }
+    }
+
+    function saveUserPresets(presets) {
+      try {
+        localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
+      } catch (e) {
+        console.error('Failed to save user presets to localStorage', e);
+        showToast('⚠️ 로컬 저장 공간이 부족하여 저장에 실패했습니다.');
+      }
+    }
+
+    function getAllPresets() {
+      return [...DEFAULT_PRESETS, ...getUserPresets()];
+    }
+
+    function getUserDecks() {
+      try {
+        const stored = localStorage.getItem(DECKS_STORAGE_KEY);
+        if (!stored) return [];
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.error('Failed to load user decks from localStorage', e);
+        return [];
+      }
+    }
+
+    function saveUserDecks(decks) {
+      try {
+        localStorage.setItem(DECKS_STORAGE_KEY, JSON.stringify(decks));
+      } catch (e) {
+        console.error('Failed to save user decks to localStorage', e);
+        showToast('⚠️ 로컬 저장 공간이 부족하여 덱 저장에 실패했습니다.');
+      }
+    }
+
+    function getAllDecks() {
+      return [...DEFAULT_DECKS, ...getUserDecks()];
+    }
+
+    function updateVaultCountBadges() {
+      const badge = document.getElementById('presetCountBadge');
+      const userPresets = getUserPresets();
+      const userDecks = getUserDecks();
+      if (badge) {
+        badge.textContent = `스타일 ${4 + userPresets.length}종 · 덱 ${4 + userDecks.length}종`;
+      }
+      const deckStatus = document.getElementById('currentDeckStatusBadge');
+      if (deckStatus) {
+        deckStatus.textContent = `현재 ${pages.length}장 제작 중`;
+      }
+    }
+
+    function renderPresetOptions(selectIdToSelect) {
+      const select = document.getElementById('presetSelect');
+      if (!select) return;
+
+      const userPresets = getUserPresets();
+      updateVaultCountBadges();
+
+      const currentSelectedVal = selectIdToSelect || select.value || DEFAULT_PRESETS[0].id;
+      select.innerHTML = '';
+
+      // 1. Built-in optgroup
+      const grpDefault = document.createElement('optgroup');
+      grpDefault.label = '✨ 추천 고품격 프리셋 (4종)';
+      DEFAULT_PRESETS.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        grpDefault.appendChild(opt);
+      });
+      select.appendChild(grpDefault);
+
+      // 2. User saved optgroup
+      const grpUser = document.createElement('optgroup');
+      grpUser.label = `📁 사용자 저장 프리셋 (${userPresets.length}개)`;
+      if (userPresets.length === 0) {
+        const optEmpty = document.createElement('option');
+        optEmpty.disabled = true;
+        optEmpty.textContent = '(아직 저장된 프리셋이 없습니다)';
+        grpUser.appendChild(optEmpty);
+      } else {
+        userPresets.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = `${p.name} (${p.createdAt || '저장됨'})`;
+          grpUser.appendChild(opt);
+        });
+      }
+      select.appendChild(grpUser);
+
+      select.value = currentSelectedVal;
+      if (!select.value && DEFAULT_PRESETS.length > 0) {
+        select.value = DEFAULT_PRESETS[0].id;
+      }
+
+      updatePresetDeleteButtonState();
+    }
+
+    function updatePresetDeleteButtonState() {
+      const select = document.getElementById('presetSelect');
+      const deleteBtn = document.getElementById('deletePresetBtn');
+      if (!select || !deleteBtn) return;
+      const selectedId = select.value;
+      const all = getAllPresets();
+      const target = all.find(p => p.id === selectedId);
+      const isUserPreset = target && !target.isBuiltIn;
+      deleteBtn.disabled = !isUserPreset;
+      deleteBtn.classList.toggle('opacity-30', !isUserPreset);
+      deleteBtn.classList.toggle('pointer-events-none', !isUserPreset);
+      deleteBtn.classList.toggle('text-rose-400', isUserPreset);
+      deleteBtn.classList.toggle('hover:text-rose-300', isUserPreset);
+    }
+
+    function renderDeckOptions(selectIdToSelect) {
+      const select = document.getElementById('deckSelect');
+      if (!select) return;
+
+      const userDecks = getUserDecks();
+      updateVaultCountBadges();
+
+      const currentSelectedVal = selectIdToSelect || select.value || DEFAULT_DECKS[0].id;
+      select.innerHTML = '';
+
+      // 1. Built-in decks optgroup
+      const grpDefault = document.createElement('optgroup');
+      grpDefault.label = '✨ 추천 기본 덱 (4종)';
+      DEFAULT_DECKS.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = `${d.name} (${d.pageCount}장)`;
+        grpDefault.appendChild(opt);
+      });
+      select.appendChild(grpDefault);
+
+      // 2. User saved decks optgroup
+      const grpUser = document.createElement('optgroup');
+      grpUser.label = `📁 사용자 저장 덱 (${userDecks.length}개)`;
+      if (userDecks.length === 0) {
+        const optEmpty = document.createElement('option');
+        optEmpty.disabled = true;
+        optEmpty.textContent = '(아직 저장된 덱 구성이 없습니다)';
+        grpUser.appendChild(optEmpty);
+      } else {
+        userDecks.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = `${d.name} (총 ${d.pageCount || d.pages.length}장 · ${d.createdAt || '저장됨'})`;
+          grpUser.appendChild(opt);
+        });
+      }
+      select.appendChild(grpUser);
+
+      select.value = currentSelectedVal;
+      if (!select.value && DEFAULT_DECKS.length > 0) {
+        select.value = DEFAULT_DECKS[0].id;
+      }
+
+      updateDeckDeleteButtonState();
+    }
+
+    function updateDeckDeleteButtonState() {
+      const select = document.getElementById('deckSelect');
+      const deleteBtn = document.getElementById('deleteDeckBtn');
+      if (!select || !deleteBtn) return;
+      const selectedId = select.value;
+      const all = getAllDecks();
+      const target = all.find(d => d.id === selectedId);
+      const isUserDeck = target && !target.isBuiltIn;
+      deleteBtn.disabled = !isUserDeck;
+      deleteBtn.classList.toggle('opacity-30', !isUserDeck);
+      deleteBtn.classList.toggle('pointer-events-none', !isUserDeck);
+      deleteBtn.classList.toggle('text-rose-400', isUserDeck);
+      deleteBtn.classList.toggle('hover:text-rose-300', isUserDeck);
+    }
+
+    function applyPresetById(presetId, applyToAll = false) {
+      const all = getAllPresets();
+      const target = all.find(p => p.id === presetId);
+      if (!target || !target.data) {
+        showToast('⚠️ 선택한 프리셋을 찾을 수 없습니다.');
+        return;
+      }
+
+      const presetData = target.data;
+
+      // 1. Apply to active state
+      for (let k of PRO_PRESET_KEYS) {
+        if (presetData[k] !== undefined) {
+          state[k] = presetData[k];
+        }
+      }
+
+      // 2. If applyToAll, apply to every page in pages[]
+      if (applyToAll && Array.isArray(pages)) {
+        pages.forEach(pg => {
+          for (let k of PRO_PRESET_KEYS) {
+            if (presetData[k] !== undefined) {
+              pg[k] = presetData[k];
+            }
+          }
+        });
+      }
+
+      saveCurrentPage();
+      syncAllInputsFromState();
+      if (typeof updateCreditControlsUI === 'function') {
+        updateCreditControlsUI();
+      }
+      renderCanvas();
+
+      if (applyToAll) {
+        showToast(`✨ '${target.name}' 스타일이 전체 페이지에 일괄 적용되었습니다!`);
+      } else {
+        showToast(`🎨 '${target.name}' 스타일이 현재 슬라이드에 적용되었습니다.`);
+      }
+    }
+
+    function loadDeckById(deckId) {
+      const allDecks = getAllDecks();
+      const target = allDecks.find(d => d.id === deckId);
+      if (!target || !Array.isArray(target.pages) || target.pages.length === 0) {
+        showToast('⚠️ 선택한 덱을 찾을 수 없습니다.');
+        return;
+      }
+
+      saveCurrentPage();
+
+      // Preserve active image if available so photo is not lost
+      const activeImg = state.image || (pages[0] && pages[0].image) || null;
+
+      // Apply aspect ratio if present
+      if (target.ratio) {
+        applyCanvasRatio(target.ratio);
+      }
+
+      const totalCount = target.pages.length;
+      pages = target.pages.map((pData, idx) => {
+        const pageNum = idx + 1;
+        const page = createPageTemplate(pData.templateMode || 'body', pageNum, totalCount);
+        for (let k of pageKeys) {
+          if (pData[k] !== undefined) {
+            page[k] = pData[k];
+          }
+        }
+        if (activeImg) page.image = activeImg;
+        return page;
+      });
+
+      activePageIndex = 0;
+      loadPageState(0);
+      updateSlideBar();
+      renderCanvas();
+      updateVaultCountBadges();
+
+      showToast(`📚 총 ${pages.length}장 구성 '${target.name}'을 성공적으로 불러왔습니다!`);
+    }
+
+    function saveCurrentDetailedSettings(name) {
+      if (!name || !name.trim()) {
+        showToast('⚠️ 프리셋 이름을 입력해주세요.');
+        return;
+      }
+      const cleanName = name.trim();
+      const collected = {};
+      for (let k of PRO_PRESET_KEYS) {
+        if (state[k] !== undefined) {
+          collected[k] = state[k];
+        }
+      }
+
+      const userPresets = getUserPresets();
+      const newPreset = {
+        id: 'user-preset-' + Date.now(),
+        name: cleanName,
+        createdAt: new Date().toLocaleDateString('ko-KR'),
+        data: collected
+      };
+
+      userPresets.unshift(newPreset);
+      saveUserPresets(userPresets);
+      renderPresetOptions(newPreset.id);
+
+      showToast(`💾 '${cleanName}' 상세 프리셋이 저장되었습니다.`);
+
+      const saveForm = document.getElementById('savePresetForm');
+      const nameInput = document.getElementById('newPresetNameInput');
+      const toggleIcon = document.getElementById('toggleSavePresetIcon');
+      const toggleText = document.getElementById('toggleSavePresetText');
+      if (saveForm) saveForm.classList.add('hidden');
+      if (nameInput) nameInput.value = '';
+      if (toggleIcon) toggleIcon.textContent = '➕';
+      if (toggleText) toggleText.textContent = '새 프리셋 등록';
+    }
+
+    function saveCurrentDeck(name) {
+      if (!name || !name.trim()) {
+        showToast('⚠️ 덱 템플릿 이름을 입력해주세요.');
+        return;
+      }
+      saveCurrentPage();
+      const cleanName = name.trim();
+      const userDecks = getUserDecks();
+
+      const serializedPages = pages.map((p, idx) => {
+        const copy = {};
+        for (let k of pageKeys) {
+          if (k === 'image') continue; // don't serialize DOM Image element
+          if (p[k] !== undefined) copy[k] = p[k];
+        }
+        return copy;
+      });
+
+      const newDeck = {
+        id: 'deck-user-' + Date.now(),
+        name: cleanName,
+        pageCount: pages.length,
+        ratio: state.ratio || '4:5',
+        createdAt: new Date().toLocaleDateString('ko-KR'),
+        pages: serializedPages
+      };
+
+      userDecks.unshift(newDeck);
+      saveUserDecks(userDecks);
+      renderDeckOptions(newDeck.id);
+
+      const saveForm = document.getElementById('saveDeckForm');
+      const input = document.getElementById('newDeckNameInput');
+      const toggleIcon = document.getElementById('toggleSaveDeckIcon');
+      const toggleText = document.getElementById('toggleSaveDeckText');
+      if (saveForm) saveForm.classList.add('hidden');
+      if (input) input.value = '';
+      if (toggleIcon) toggleIcon.textContent = '➕';
+      if (toggleText) toggleText.textContent = '현재 덱 저장';
+
+      showToast(`💾 총 ${pages.length}장 구성 '${cleanName}' 덱이 저장되었습니다.`);
+    }
+
+    function deleteSelectedPreset() {
+      const select = document.getElementById('presetSelect');
+      if (!select) return;
+      const selectedId = select.value;
+      const all = getAllPresets();
+      const target = all.find(p => p.id === selectedId);
+      if (!target) return;
+
+      if (target.isBuiltIn) {
+        showToast('⚠️ 추천 기본 프리셋은 삭제할 수 없습니다.');
+        return;
+      }
+
+      let userPresets = getUserPresets();
+      userPresets = userPresets.filter(p => p.id !== selectedId);
+      saveUserPresets(userPresets);
+      renderPresetOptions(DEFAULT_PRESETS[0].id);
+      showToast(`🗑️ '${target.name}' 프리셋이 삭제되었습니다.`);
+    }
+
+    function deleteSelectedDeck() {
+      const select = document.getElementById('deckSelect');
+      if (!select) return;
+      const selectedId = select.value;
+      const all = getAllDecks();
+      const target = all.find(d => d.id === selectedId);
+      if (!target) return;
+
+      if (target.isBuiltIn) {
+        showToast('⚠️ 추천 기본 덱은 삭제할 수 없습니다.');
+        return;
+      }
+
+      let userDecks = getUserDecks();
+      userDecks = userDecks.filter(d => d.id !== selectedId);
+      saveUserDecks(userDecks);
+      renderDeckOptions(DEFAULT_DECKS[0].id);
+      showToast(`🗑️ '${target.name}' 덱이 삭제되었습니다.`);
+    }
+
+    function exportPresetsJson() {
+      const userPresets = getUserPresets();
+      let exportList = userPresets;
+      if (exportList.length === 0) {
+        const collected = {};
+        for (let k of PRO_PRESET_KEYS) {
+          if (state[k] !== undefined) collected[k] = state[k];
+        }
+        exportList = [{
+          id: 'preset-' + Date.now(),
+          name: '내 카드뉴스 상세 프리셋 (' + new Date().toLocaleDateString('ko-KR') + ')',
+          createdAt: new Date().toLocaleDateString('ko-KR'),
+          data: collected
+        }];
+      }
+
+      const exportBundle = {
+        type: 'cardnews-pro-presets',
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        presets: exportList
+      };
+
+      const jsonStr = JSON.stringify(exportBundle, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cardnews_style_presets_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('⬇️ 프리셋 JSON 백업 파일이 다운로드되었습니다.');
+    }
+
+    function exportDeckJson() {
+      saveCurrentPage();
+      const userDecks = getUserDecks();
+      let exportList = userDecks;
+      if (exportList.length === 0) {
+        const serializedPages = pages.map(p => {
+          const copy = {};
+          for (let k of pageKeys) {
+            if (k === 'image') continue;
+            if (p[k] !== undefined) copy[k] = p[k];
+          }
+          return copy;
+        });
+        exportList = [{
+          id: 'deck-' + Date.now(),
+          name: `내 카드뉴스 전체 구성 (${pages.length}장, ${new Date().toLocaleDateString('ko-KR')})`,
+          pageCount: pages.length,
+          ratio: state.ratio || '4:5',
+          createdAt: new Date().toLocaleDateString('ko-KR'),
+          pages: serializedPages
+        }];
+      }
+
+      const exportBundle = {
+        type: 'cardnews-full-decks',
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        decks: exportList
+      };
+
+      const jsonStr = JSON.stringify(exportBundle, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cardnews_deck_project_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('⬇️ 전체 덱 구성 JSON 백업 파일이 다운로드되었습니다.');
+    }
+
+    function importPresetsJson(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          let incoming = [];
+          if (Array.isArray(parsed)) {
+            incoming = parsed;
+          } else if (parsed && parsed.presets && Array.isArray(parsed.presets)) {
+            incoming = parsed.presets;
+          } else if (parsed && parsed.data) {
+            incoming = [parsed];
+          }
+
+          if (incoming.length === 0) {
+            showToast('⚠️ 올바른 프리셋 JSON 데이터가 없습니다.');
+            return;
+          }
+
+          const userPresets = getUserPresets();
+          let added = 0;
+          let latestId = null;
+
+          incoming.forEach((item, idx) => {
+            if (!item || !item.data) return;
+            const newId = 'imported-' + Date.now() + '-' + idx;
+            userPresets.unshift({
+              id: newId,
+              name: item.name || `가져온 프리셋 ${idx + 1}`,
+              createdAt: item.createdAt || new Date().toLocaleDateString('ko-KR'),
+              data: item.data
+            });
+            latestId = newId;
+            added++;
+          });
+
+          if (added > 0) {
+            saveUserPresets(userPresets);
+            renderPresetOptions(latestId);
+            applyPresetById(latestId, false);
+            showToast(`⬆️ ${added}개의 프리셋을 성공적으로 불러와 적용했습니다!`);
+          } else {
+            showToast('⚠️ 프리셋 형식이 일치하지 않습니다.');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('❌ JSON 파일을 읽는 도중 오류가 발생했습니다.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function importDeckJson(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          let incoming = [];
+          if (Array.isArray(parsed)) {
+            incoming = parsed;
+          } else if (parsed && parsed.decks && Array.isArray(parsed.decks)) {
+            incoming = parsed.decks;
+          } else if (parsed && parsed.pages && Array.isArray(parsed.pages)) {
+            incoming = [parsed];
+          }
+
+          if (incoming.length === 0) {
+            showToast('⚠️ 올바른 덱 구성 JSON 데이터가 없습니다.');
+            return;
+          }
+
+          const userDecks = getUserDecks();
+          let added = 0;
+          let latestId = null;
+
+          incoming.forEach((item, idx) => {
+            if (!item || !Array.isArray(item.pages) || item.pages.length === 0) return;
+            const newId = 'imported-deck-' + Date.now() + '-' + idx;
+            userDecks.unshift({
+              id: newId,
+              name: item.name || `가져온 덱 (${item.pages.length}장)`,
+              pageCount: item.pages.length,
+              ratio: item.ratio || '4:5',
+              createdAt: item.createdAt || new Date().toLocaleDateString('ko-KR'),
+              pages: item.pages
+            });
+            latestId = newId;
+            added++;
+          });
+
+          if (added > 0) {
+            saveUserDecks(userDecks);
+            renderDeckOptions(latestId);
+            loadDeckById(latestId);
+            showToast(`⬆️ ${added}개의 덱 템플릿을 성공적으로 가져와 작업 공간에 적용했습니다!`);
+          } else {
+            showToast('⚠️ 유효한 페이지 구성이 포함된 덱 데이터가 없습니다.');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('❌ JSON 파일을 읽는 도중 오류가 발생했습니다.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function initVaultAndDeckEngine() {
+      renderPresetOptions();
+      renderDeckOptions();
+
+      // Sub-tab switching between Style Presets and Full Deck
+      const tabStyleBtn = document.getElementById('vaultTabStyleBtn');
+      const tabDeckBtn = document.getElementById('vaultTabDeckBtn');
+      const panelStyle = document.getElementById('vaultPanelStyle');
+      const panelDeck = document.getElementById('vaultPanelDeck');
+
+      function switchVaultTab(tab) {
+        if (tab === 'style') {
+          if (tabStyleBtn) {
+            tabStyleBtn.className = 'py-1.5 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 transition-all bg-indigo-600 text-white shadow-sm';
+          }
+          if (tabDeckBtn) {
+            tabDeckBtn.className = 'py-1.5 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60';
+          }
+          if (panelStyle) panelStyle.classList.remove('hidden');
+          if (panelDeck) panelDeck.classList.add('hidden');
+        } else {
+          if (tabDeckBtn) {
+            tabDeckBtn.className = 'py-1.5 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 transition-all bg-indigo-600 text-white shadow-sm';
+          }
+          if (tabStyleBtn) {
+            tabStyleBtn.className = 'py-1.5 px-2 rounded-md text-[11px] font-bold flex items-center justify-center gap-1 transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60';
+          }
+          if (panelDeck) panelDeck.classList.remove('hidden');
+          if (panelStyle) panelStyle.classList.add('hidden');
+          updateVaultCountBadges();
+        }
+      }
+
+      if (tabStyleBtn) tabStyleBtn.addEventListener('click', () => switchVaultTab('style'));
+      if (tabDeckBtn) tabDeckBtn.addEventListener('click', () => switchVaultTab('deck'));
+
+      // 1. Style Preset UI bindings
+      const presetSelect = document.getElementById('presetSelect');
+      const applyBtn = document.getElementById('applyPresetBtn');
+      const applyAllBtn = document.getElementById('applyAllPresetBtn');
+      const togglePresetBtn = document.getElementById('toggleSavePresetFormBtn');
+      const savePresetForm = document.getElementById('savePresetForm');
+      const newPresetNameInput = document.getElementById('newPresetNameInput');
+      const saveNewPresetBtn = document.getElementById('saveNewPresetBtn');
+      const cancelSavePresetBtn = document.getElementById('cancelSavePresetBtn');
+      const deletePresetBtn = document.getElementById('deletePresetBtn');
+      const exportPresetBtn = document.getElementById('exportPresetJsonBtn');
+      const importPresetInput = document.getElementById('importPresetJsonInput');
+      const togglePresetIcon = document.getElementById('toggleSavePresetIcon');
+      const togglePresetText = document.getElementById('toggleSavePresetText');
+
+      if (presetSelect) {
+        presetSelect.addEventListener('change', () => updatePresetDeleteButtonState());
+      }
+      if (applyBtn && presetSelect) {
+        applyBtn.addEventListener('click', () => applyPresetById(presetSelect.value, false));
+      }
+      if (applyAllBtn && presetSelect) {
+        applyAllBtn.addEventListener('click', () => applyPresetById(presetSelect.value, true));
+      }
+      if (togglePresetBtn && savePresetForm) {
+        togglePresetBtn.addEventListener('click', () => {
+          const isHidden = savePresetForm.classList.contains('hidden');
+          savePresetForm.classList.toggle('hidden', !isHidden);
+          if (isHidden) {
+            const userCount = getUserPresets().length;
+            if (newPresetNameInput) {
+              newPresetNameInput.value = `내 커스텀 스타일 ${userCount + 1}`;
+              newPresetNameInput.focus();
+              newPresetNameInput.select();
+            }
+            if (togglePresetIcon) togglePresetIcon.textContent = '✖️';
+            if (togglePresetText) togglePresetText.textContent = '닫기';
+          } else {
+            if (togglePresetIcon) togglePresetIcon.textContent = '➕';
+            if (togglePresetText) togglePresetText.textContent = '새 프리셋 등록';
+          }
+        });
+      }
+      if (cancelSavePresetBtn && savePresetForm) {
+        cancelSavePresetBtn.addEventListener('click', () => {
+          savePresetForm.classList.add('hidden');
+          if (togglePresetIcon) togglePresetIcon.textContent = '➕';
+          if (togglePresetText) togglePresetText.textContent = '새 프리셋 등록';
+        });
+      }
+      if (saveNewPresetBtn && newPresetNameInput) {
+        saveNewPresetBtn.addEventListener('click', () => saveCurrentDetailedSettings(newPresetNameInput.value));
+        newPresetNameInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') saveCurrentDetailedSettings(newPresetNameInput.value);
+        });
+      }
+      if (deletePresetBtn) {
+        deletePresetBtn.addEventListener('click', () => deleteSelectedPreset());
+      }
+      if (exportPresetBtn) {
+        exportPresetBtn.addEventListener('click', () => exportPresetsJson());
+      }
+      if (importPresetInput) {
+        importPresetInput.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (file) {
+            importPresetsJson(file);
+            importPresetInput.value = '';
+          }
+        });
+      }
+
+      // 2. Full Deck UI bindings
+      const deckSelect = document.getElementById('deckSelect');
+      const loadDeckBtn = document.getElementById('loadDeckBtn');
+      const toggleDeckBtn = document.getElementById('toggleSaveDeckFormBtn');
+      const saveDeckForm = document.getElementById('saveDeckForm');
+      const newDeckNameInput = document.getElementById('newDeckNameInput');
+      const saveNewDeckBtn = document.getElementById('saveNewDeckBtn');
+      const cancelSaveDeckBtn = document.getElementById('cancelSaveDeckBtn');
+      const deleteDeckBtn = document.getElementById('deleteDeckBtn');
+      const exportDeckBtn = document.getElementById('exportDeckJsonBtn');
+      const importDeckInput = document.getElementById('importDeckJsonInput');
+      const toggleDeckIcon = document.getElementById('toggleSaveDeckIcon');
+      const toggleDeckText = document.getElementById('toggleSaveDeckText');
+
+      if (deckSelect) {
+        deckSelect.addEventListener('change', () => updateDeckDeleteButtonState());
+      }
+      if (loadDeckBtn && deckSelect) {
+        loadDeckBtn.addEventListener('click', () => loadDeckById(deckSelect.value));
+      }
+      if (toggleDeckBtn && saveDeckForm) {
+        toggleDeckBtn.addEventListener('click', () => {
+          const isHidden = saveDeckForm.classList.contains('hidden');
+          saveDeckForm.classList.toggle('hidden', !isHidden);
+          if (isHidden) {
+            const userCount = getUserDecks().length;
+            if (newDeckNameInput) {
+              newDeckNameInput.value = `내 ${pages.length}장 카드뉴스 구성 ${userCount + 1}`;
+              newDeckNameInput.focus();
+              newDeckNameInput.select();
+            }
+            if (toggleDeckIcon) toggleDeckIcon.textContent = '✖️';
+            if (toggleDeckText) toggleDeckText.textContent = '닫기';
+          } else {
+            if (toggleDeckIcon) toggleDeckIcon.textContent = '➕';
+            if (toggleDeckText) toggleDeckText.textContent = '현재 덱 저장';
+          }
+        });
+      }
+      if (cancelSaveDeckBtn && saveDeckForm) {
+        cancelSaveDeckBtn.addEventListener('click', () => {
+          saveDeckForm.classList.add('hidden');
+          if (toggleDeckIcon) toggleDeckIcon.textContent = '➕';
+          if (toggleDeckText) toggleDeckText.textContent = '현재 덱 저장';
+        });
+      }
+      if (saveNewDeckBtn && newDeckNameInput) {
+        saveNewDeckBtn.addEventListener('click', () => saveCurrentDeck(newDeckNameInput.value));
+        newDeckNameInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') saveCurrentDeck(newDeckNameInput.value);
+        });
+      }
+      if (deleteDeckBtn) {
+        deleteDeckBtn.addEventListener('click', () => deleteSelectedDeck());
+      }
+      if (exportDeckBtn) {
+        exportDeckBtn.addEventListener('click', () => exportDeckJson());
+      }
+      if (importDeckInput) {
+        importDeckInput.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (file) {
+            importDeckJson(file);
+            importDeckInput.value = '';
+          }
+        });
+      }
+
+      // 3. Slide Bar Quick Buttons integration
+      const slideBarDeckSaveBtn = document.getElementById('slideBarDeckSaveBtn');
+      const slideBarDeckLoadBtn = document.getElementById('slideBarDeckLoadBtn');
+
+      if (slideBarDeckSaveBtn) {
+        slideBarDeckSaveBtn.addEventListener('click', () => {
+          switchVaultTab('deck');
+          if (saveDeckForm) saveDeckForm.classList.remove('hidden');
+          if (newDeckNameInput) {
+            const userCount = getUserDecks().length;
+            newDeckNameInput.value = `내 ${pages.length}장 카드뉴스 구성 ${userCount + 1}`;
+            newDeckNameInput.focus();
+            newDeckNameInput.select();
+          }
+          if (toggleDeckIcon) toggleDeckIcon.textContent = '✖️';
+          if (toggleDeckText) toggleDeckText.textContent = '닫기';
+
+          // Scroll sidebar to vault section
+          const vaultSection = document.getElementById('presetVaultSection');
+          if (vaultSection) vaultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+
+      if (slideBarDeckLoadBtn) {
+        slideBarDeckLoadBtn.addEventListener('click', () => {
+          switchVaultTab('deck');
+          const vaultSection = document.getElementById('presetVaultSection');
+          if (vaultSection) vaultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+    }
+
+    // Window Init
+    window.addEventListener('load', () => {
+      canvas.width = state.width;
+      canvas.height = state.height;
+      fitCanvasToViewport();
+      setWorkMode('simple');
+      initMultiPageEngine();
+      initVaultAndDeckEngine();
+    });
+  </script>
+</body>
+</html>
