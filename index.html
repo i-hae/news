@@ -406,11 +406,11 @@
                 <label class="text-[11px] text-slate-300 font-semibold">전체 덱 구성 불러오기</label>
                 <span class="text-[10px] text-emerald-400 font-medium" id="currentDeckStatusBadge">현재 3장 제작 중</span>
               </div>
-              <div class="flex items-center gap-1.5">
-                <select id="deckSelect" class="flex-1 px-2.5 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-medium">
+              <div class="flex items-center gap-1.5 w-full min-w-0">
+                <select id="deckSelect" class="flex-1 min-w-0 truncate px-2.5 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-medium">
                   <!-- JavaScript renders deck options dynamically -->
                 </select>
-                <button type="button" id="loadDeckBtn" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-1 flex-shrink-0" title="선택한 전체 덱(페이지 수 + 구성 전체)을 작업창에 불러옵니다.">
+                <button type="button" id="loadDeckBtn" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1 flex-shrink-0 whitespace-nowrap" title="선택한 전체 덱(페이지 수 + 구성 전체)을 작업창에 불러옵니다.">
                   <span>불러오기</span>
                 </button>
               </div>
@@ -454,30 +454,6 @@
                 <span>🗑️ 선택 삭제</span>
               </button>
             </div>
-          </div>
-        </section>
-
-        <!-- 0-B. Template Type Selector (Cover vs Body vs Ending) -->
-        <section class="space-y-2 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
-          <div class="flex items-center justify-between">
-            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> 템플릿 유형 선택
-            </label>
-            <span id="currentTemplateBadge" class="text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">표지 (Cover)</span>
-          </div>
-          <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900 rounded-lg border border-slate-800" id="templateTabs">
-            <button type="button" data-template="cover" class="template-tab-btn py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center gap-1 transition-all border border-indigo-500 bg-indigo-500/20 text-white shadow-sm">
-              <span class="text-sm">🏷️</span>
-              <span>1. 표지 커버</span>
-            </button>
-            <button type="button" data-template="body" class="template-tab-btn py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center gap-1 transition-all border border-transparent bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
-              <span class="text-sm">📄</span>
-              <span>2. 본문 내용</span>
-            </button>
-            <button type="button" data-template="ending" class="template-tab-btn py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center gap-1 transition-all border border-transparent bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
-              <span class="text-sm">🏁</span>
-              <span>3. 마무리 엔딩</span>
-            </button>
           </div>
         </section>
 
@@ -687,109 +663,27 @@
             <span id="panelModeBadge" class="text-[10px] text-indigo-400 font-semibold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">표지 모드</span>
           </div>
 
-          <!-- 3-0. 공통 출처 / 자료 표기 (Credit & Source - 모든 표지스타일/본문/엔딩 공통 지원) -->
-          <div class="item-setting-card bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 space-y-3 shadow-md">
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2 min-w-0">
-                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5 truncate">
-                  <span class="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span> <span>출처 / 자료 표기 (Credit)</span>
-                </span>
-                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0" title="출처 표기 활성화 여부">
-                  <input type="checkbox" id="showCredit" checked class="sr-only peer">
-                  <div class="w-8 h-4.5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-500"></div>
-                </label>
-              </div>
-              <div class="item-mode-switcher flex-shrink-0">
-                <button type="button" class="item-mode-btn active mode-btn-simple" data-mode="simple" title="간편 설정"><span>⚡ 간편</span></button>
-                <button type="button" class="item-mode-btn mode-btn-pro" data-mode="pro" title="상세 설정"><span>🛠️ 상세</span></button>
-              </div>
+          <!-- Template Type Selector (Cover vs Body vs Ending) -->
+          <div class="space-y-2 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> 템플릿 유형 선택
+              </label>
+              <span id="currentTemplateBadge" class="text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">표지 (Cover)</span>
             </div>
-
-            <!-- 간편 / 상세 모드 공통: 입력창, 빠른 접두어, 표기 위치 -->
-            <div class="space-y-2.5">
-              <input type="text" id="creditText" value="배경 이미지: 서울경제 권욱 기자" placeholder="예: 배경 이미지: 서울경제 권욱 기자 / 자료: 통계청" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
-              
-              <!-- 원클릭 출처 접두어 칩 -->
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span class="text-[10px] text-slate-400 font-medium">빠른 접두어:</span>
-                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="사진: ">사진:</button>
-                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="출처: ">출처:</button>
-                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="자료: ">자료:</button>
-                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="취재: ">취재:</button>
-                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="그래픽: ">그래픽:</button>
-              </div>
-
-              <!-- 출처 표기 위치 선택 (간편 / 상세 공통 사용 가능) -->
-              <div class="pt-1">
-                <div class="flex items-center justify-between mb-1.5">
-                  <label class="text-[11px] font-semibold text-slate-300">출처 표기 위치</label>
-                  <span class="text-[10px] text-slate-400 font-normal">5개 배치 옵션</span>
-                </div>
-                <div class="grid grid-cols-5 gap-1" id="creditPosGroup">
-                  <button type="button" data-credit-pos="top-left" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-indigo-500 bg-indigo-500/20 text-white transition-all text-center whitespace-nowrap overflow-hidden" title="좌측 상단">
-                    ↖ 좌상
-                  </button>
-                  <button type="button" data-credit-pos="top-right" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center whitespace-nowrap overflow-hidden" title="우측 상단">
-                    ↗ 우상
-                  </button>
-                  <button type="button" data-credit-pos="bottom-left" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center whitespace-nowrap overflow-hidden" title="좌측 하단">
-                    ↙ 좌하
-                  </button>
-                  <button type="button" data-credit-pos="bottom-right" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center whitespace-nowrap overflow-hidden" title="우측 하단">
-                    ↘ 우하
-                  </button>
-                  <button type="button" data-credit-pos="vertical-right" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center whitespace-nowrap overflow-hidden" title="우측 세로">
-                    ▮ 세로
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 상세 모드 전용: 다양한 출처 표기 방식 (스타일, 크기, 불투명도) -->
-            <div class="pro-only space-y-3 pt-2.5 border-t border-slate-800/80">
-
-              <!-- 2. 표기 스타일 선택 (4가지) -->
-              <div>
-                <label class="text-[11px] font-semibold text-slate-300 block mb-1.5">표기 디자인 스타일</label>
-                <div class="grid grid-cols-2 gap-1.5" id="creditStyleGroup">
-                  <button type="button" data-credit-style="minimal" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-indigo-500 bg-indigo-500/20 text-white transition-all text-center">
-                    ✨ 미니멀 텍스트
-                  </button>
-                  <button type="button" data-credit-style="dark-pill" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
-                    🌑 다크 캡슐 배지
-                  </button>
-                  <button type="button" data-credit-style="light-pill" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
-                    ⚪ 라이트 캡슐 배지
-                  </button>
-                  <button type="button" data-credit-style="accent-bar" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
-                    ▎포인트 바 스타일
-                  </button>
-                </div>
-              </div>
-
-              <!-- 3. 글자 크기 & 불투명도 슬라이더 -->
-              <div class="grid grid-cols-2 gap-3 pt-1">
-                <div>
-                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
-                    <span>글자 크기</span>
-                    <div class="num-input-wrap">
-                      <input id="creditSizeInput" type="number" min="14" max="32" step="1" value="20" class="num-input-val">
-                      <span class="num-input-unit">px</span>
-                    </div>
-                  </div>
-                  <input id="creditSizeSlider" type="range" min="14" max="32" step="1" value="20" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-                </div>
-                <div>
-                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
-                    <span>불투명도</span>
-                    <div class="num-input-wrap">
-                      <input id="creditOpacityInput" type="number" min="40" max="100" step="5" value="85" class="num-input-val">
-                      <span class="num-input-unit">%</span>
-                    </div>
-                  </div>
-                  <input id="creditOpacitySlider" type="range" min="40" max="100" step="5" value="85" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-                </div>
-              </div>
+            <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900 rounded-lg border border-slate-800" id="templateTabs">
+              <button type="button" data-template="cover" class="template-tab-btn py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center gap-1 transition-all border border-indigo-500 bg-indigo-500/20 text-white shadow-sm">
+                <span class="text-sm">🏷️</span>
+                <span>1. 표지 커버</span>
+              </button>
+              <button type="button" data-template="body" class="template-tab-btn py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center gap-1 transition-all border border-transparent bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+                <span class="text-sm">📄</span>
+                <span>2. 본문 내용</span>
+              </button>
+              <button type="button" data-template="ending" class="template-tab-btn py-2 px-1 rounded-md text-xs font-semibold flex flex-col items-center gap-1 transition-all border border-transparent bg-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+                <span class="text-sm">🏁</span>
+                <span>3. 마무리 엔딩</span>
+              </button>
             </div>
           </div>
 
@@ -1726,6 +1620,112 @@
               <input type="text" id="endHandleText" value="@cardnews_studio | 매주 목요일 새로운 인사이트" placeholder="예: @brand_official | 매주 발행" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-300 focus:outline-none focus:border-indigo-500">
             </div>
           </div>
+
+          <!-- 3-0. 공통 출처 / 자료 표기 (Credit & Source - 모든 표지스타일/본문/엔딩 공통 지원) -->
+          <div class="item-setting-card bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 space-y-3 shadow-md">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5 truncate">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span> <span>출처 / 자료 표기 (Credit)</span>
+                </span>
+                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0" title="출처 표기 활성화 여부">
+                  <input type="checkbox" id="showCredit" checked class="sr-only peer">
+                  <div class="w-8 h-4.5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+              <div class="item-mode-switcher flex-shrink-0">
+                <button type="button" class="item-mode-btn active mode-btn-simple" data-mode="simple" title="간편 설정"><span>⚡ 간편</span></button>
+                <button type="button" class="item-mode-btn mode-btn-pro" data-mode="pro" title="상세 설정"><span>🛠️ 상세</span></button>
+              </div>
+            </div>
+
+            <!-- 간편 / 상세 모드 공통: 입력창, 빠른 접두어, 표기 위치 -->
+            <div class="space-y-2.5">
+              <input type="text" id="creditText" value="배경 이미지: 서울경제 권욱 기자" placeholder="예: 배경 이미지: 서울경제 권욱 기자 / 자료: 통계청" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500">
+              
+              <!-- 원클릭 출처 접두어 칩 -->
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[10px] text-slate-400 font-medium">빠른 접두어:</span>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="사진: ">사진:</button>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="출처: ">출처:</button>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="자료: ">자료:</button>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="취재: ">취재:</button>
+                <button type="button" class="credit-prefix-chip px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 hover:text-white transition-colors border border-slate-700/60" data-prefix="그래픽: ">그래픽:</button>
+              </div>
+
+              <!-- 출처 표기 위치 선택 (간편 / 상세 공통 사용 가능) -->
+              <div class="pt-1">
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-[11px] font-semibold text-slate-300">출처 표기 위치</label>
+                  <span class="text-[10px] text-slate-400 font-normal">5개 배치 옵션</span>
+                </div>
+                <div class="grid grid-cols-5 gap-1" id="creditPosGroup">
+                  <button type="button" data-credit-pos="top-left" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-indigo-500 bg-indigo-500/20 text-white transition-all text-center whitespace-nowrap overflow-hidden" title="좌측 상단">
+                    ↖ 좌상
+                  </button>
+                  <button type="button" data-credit-pos="top-right" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center whitespace-nowrap overflow-hidden" title="우측 상단">
+                    ↗ 우상
+                  </button>
+                  <button type="button" data-credit-pos="bottom-left" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center whitespace-nowrap overflow-hidden" title="좌측 하단">
+                    ↙ 좌하
+                  </button>
+                  <button type="button" data-credit-pos="bottom-right" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center whitespace-nowrap overflow-hidden" title="우측 하단">
+                    ↘ 우하
+                  </button>
+                  <button type="button" data-credit-pos="vertical-right" class="credit-pos-btn px-0.5 sm:px-1 py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center whitespace-nowrap overflow-hidden" title="우측 세로">
+                    ▮ 세로
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 상세 모드 전용: 다양한 출처 표기 방식 (스타일, 크기, 불투명도) -->
+            <div class="pro-only space-y-3 pt-2.5 border-t border-slate-800/80">
+
+              <!-- 2. 표기 스타일 선택 (4가지) -->
+              <div>
+                <label class="text-[11px] font-semibold text-slate-300 block mb-1.5">표기 디자인 스타일</label>
+                <div class="grid grid-cols-2 gap-1.5" id="creditStyleGroup">
+                  <button type="button" data-credit-style="minimal" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-indigo-500 bg-indigo-500/20 text-white transition-all text-center">
+                    ✨ 미니멀 텍스트
+                  </button>
+                  <button type="button" data-credit-style="dark-pill" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                    🌑 다크 캡슐 배지
+                  </button>
+                  <button type="button" data-credit-style="light-pill" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                    ⚪ 라이트 캡슐 배지
+                  </button>
+                  <button type="button" data-credit-style="accent-bar" class="credit-style-btn px-2 py-1.5 rounded-lg border text-[11px] font-medium border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 transition-all text-center">
+                    ▎포인트 바 스타일
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3. 글자 크기 & 불투명도 슬라이더 -->
+              <div class="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                    <span>글자 크기</span>
+                    <div class="num-input-wrap">
+                      <input id="creditSizeInput" type="number" min="14" max="32" step="1" value="20" class="num-input-val">
+                      <span class="num-input-unit">px</span>
+                    </div>
+                  </div>
+                  <input id="creditSizeSlider" type="range" min="14" max="32" step="1" value="20" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+                <div>
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 mb-1">
+                    <span>불투명도</span>
+                    <div class="num-input-wrap">
+                      <input id="creditOpacityInput" type="number" min="40" max="100" step="5" value="85" class="num-input-val">
+                      <span class="num-input-unit">%</span>
+                    </div>
+                  </div>
+                  <input id="creditOpacitySlider" type="range" min="40" max="100" step="5" value="85" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- 4. Gradient & Legibility Overlay -->
@@ -1841,44 +1841,47 @@
         </div>
       </div>
 
-      <!-- Multi-Slide Controller & Carousel Bar (모바일 2단 최적화 / 데스크톱 일렬) -->
-      <div id="slideManagementBar" class="mt-1 z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 sm:gap-2 bg-slate-900/95 backdrop-blur-xl px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-slate-700/80 text-xs shadow-2xl w-full max-w-[900px] flex-shrink-0">
+      <!-- Multi-Slide Controller & Carousel Bar (2줄 여유로운 프리미엄 레이아웃) -->
+      <div id="slideManagementBar" class="mt-1.5 z-20 flex flex-col gap-2 bg-slate-900/95 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl border border-slate-700/80 text-xs shadow-2xl w-full max-w-[920px] flex-shrink-0">
         
-        <!-- Row 1: Left Navigation & Slide Chips -->
-        <div class="flex items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto">
+        <!-- Row 1: Left Navigation & Slide Chips (시원하게 넓어진 칩 레일) -->
+        <div class="flex items-center justify-between gap-2 w-full">
           <!-- Left: Navigation (Prev / Counter / Next) -->
-          <div class="flex items-center gap-1">
-            <button id="prevSlideBtn" type="button" title="이전 페이지 (Alt + ←)" class="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-xs">
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button id="prevSlideBtn" type="button" title="이전 페이지 (Alt + ←)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-semibold transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed text-xs">
               <span>◀</span> <span class="hidden sm:inline">이전</span>
             </button>
 
-            <div class="flex items-center gap-1 px-2 sm:px-3 py-1 bg-slate-950/80 rounded-lg border border-slate-800 font-mono shadow-inner text-xs sm:text-sm">
+            <div class="flex items-center gap-1 px-2.5 sm:px-3 py-1 bg-slate-950/80 rounded-lg border border-slate-800 font-mono shadow-inner text-xs sm:text-sm">
               <span id="currentSlideNum" class="text-indigo-400 font-extrabold">1</span>
               <span class="text-slate-600">/</span>
               <span id="totalSlideNum" class="text-slate-400 font-bold">3</span>
               <span id="currentSlideBadge" class="ml-1 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">표지</span>
             </div>
 
-            <button id="nextSlideBtn" type="button" title="다음 페이지 (Alt + →)" class="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-xs">
+            <button id="nextSlideBtn" type="button" title="다음 페이지 (Alt + →)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-semibold transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed text-xs">
               <span class="hidden sm:inline">다음</span> <span>▶</span>
             </button>
           </div>
 
-          <!-- Center: Slide Quick Navigation Chips (가로 스크롤) -->
-          <div id="slideChipsContainer" class="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-[320px] md:max-w-[420px] py-0.5 px-1 custom-scrollbar">
+          <!-- Center/Right: Slide Quick Navigation Chips (시원하고 여유로운 가로 스크롤 칩 레일) -->
+          <div id="slideChipsContainer" class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto py-1 px-1.5 bg-slate-950/60 rounded-xl border border-slate-800/80 custom-scrollbar">
             <!-- Dynamically rendered slide chips -->
           </div>
         </div>
 
-        <!-- Row 2: Action Controls (Add / Duplicate / Move / Renumber / Delete / Deck) -->
-        <div class="flex items-center justify-between sm:justify-end gap-1 sm:gap-1.5 overflow-x-auto py-0.5 sm:py-0 w-full sm:w-auto flex-shrink-0 custom-scrollbar">
-          <!-- Add Slide Button & Menu -->
-          <div class="relative flex-shrink-0">
-            <button type="button" id="addSlideBtn" class="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1 shadow-md shadow-emerald-900/30 transition-all active:scale-95 text-xs">
-              <span>➕</span> <span>추가</span>
+        <!-- Row 2: Action Controls (Add / Duplicate / Renumber / Delete / Deck - 화살표 제거 및 여유로운 배치) -->
+        <div class="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 pt-1.5 border-t border-slate-800/80 overflow-x-auto w-full flex-shrink-0 custom-scrollbar">
+          <!-- Add Slide Button & Menu (스플릿 버튼: 원클릭 즉시 본문 추가 + 서브 화살표로 템플릿 선택) -->
+          <div class="relative flex-shrink-0 flex items-stretch rounded-lg shadow-md shadow-emerald-950/40" id="addSlideGroup">
+            <button type="button" id="addSlideBtn" class="px-2.5 sm:px-3 py-1.5 rounded-l-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition-all active:scale-95 text-xs" title="새 본문 슬라이드 즉시 추가">
+              <span>➕</span> <span>슬라이드 추가</span>
             </button>
-            <!-- Add Slide Menu Dropdown -->
-            <div id="addSlideMenu" class="hidden absolute bottom-full mb-2 left-0 sm:left-auto sm:right-0 w-44 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
+            <button type="button" id="addSlideMenuToggleBtn" class="px-1.5 sm:px-2 py-1.5 rounded-r-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold border-l border-emerald-500/40 flex items-center justify-center transition-all active:scale-95 text-xs" title="슬라이드 템플릿 유형 선택 (본문/표지/마무리)">
+              <span class="text-[9px]">▼</span>
+            </button>
+            <!-- Add Slide Menu Dropdown (Fixed 팝오버로 overflow 잘림 완전 방지) -->
+            <div id="addSlideMenu" class="hidden fixed bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs w-44">
               <button type="button" data-add-template="body" class="w-full text-left px-3 py-2 hover:bg-emerald-600/20 text-emerald-300 font-semibold flex items-center gap-2 transition-colors">
                 <span>📄</span> <span>본문 페이지 추가</span>
               </button>
@@ -1892,35 +1895,18 @@
           </div>
 
           <!-- Duplicate Slide -->
-          <button type="button" id="dupSlideBtn" title="현재 페이지를 그대로 복제합니다" class="p-1 sm:px-2 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 font-medium transition-colors text-xs flex-shrink-0">
-            <span>📋</span> <span class="hidden sm:inline">복제</span>
-          </button>
-
-          <!-- Move Left / Right -->
-          <button type="button" id="movePrevSlideBtn" title="현재 페이지를 앞으로 이동" class="p-1 sm:px-1.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center transition-colors text-xs flex-shrink-0">
-            <span>←</span>
-          </button>
-          <button type="button" id="moveNextSlideBtn" title="현재 페이지를 뒤로 이동" class="p-1 sm:px-1.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center transition-colors text-xs flex-shrink-0">
-            <span>→</span>
+          <button type="button" id="dupSlideBtn" title="현재 페이지를 그대로 복제합니다" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 font-medium transition-colors text-xs flex-shrink-0">
+            <span>📋</span> <span>복제</span>
           </button>
 
           <!-- Auto Renumber Pages -->
-          <button type="button" id="autoRenumberBtn" title="본문 페이지 번호(02/05 등)를 순서에 맞게 일괄 자동 갱신" class="p-1 sm:px-2 sm:py-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-700/60 flex items-center gap-1 font-medium transition-colors text-xs flex-shrink-0">
-            <span>🔢</span> <span class="hidden md:inline">번호</span>
+          <button type="button" id="autoRenumberBtn" title="본문 페이지 번호(02/05 등)를 순서에 맞게 일괄 자동 갱신" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-700/60 flex items-center gap-1.5 font-medium transition-colors text-xs flex-shrink-0">
+            <span>🔢</span> <span>번호 정렬</span>
           </button>
 
           <!-- Delete Slide -->
-          <button type="button" id="deleteSlideBtn" title="현재 페이지 삭제" class="p-1 sm:px-2 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-rose-400 hover:text-rose-300 border border-slate-700 hover:border-rose-800 flex items-center gap-1 font-medium transition-colors text-xs flex-shrink-0">
-            <span>🗑️</span> <span class="hidden sm:inline">삭제</span>
-          </button>
-
-          <!-- Quick Deck Save & Load Buttons -->
-          <div class="h-3.5 w-px bg-slate-700 mx-0.5 hidden sm:block"></div>
-          <button type="button" id="slideBarDeckSaveBtn" title="현재 전체 페이지(N장) 구성을 템플릿으로 저장" class="p-1 sm:px-2 sm:py-1.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/70 flex items-center gap-1 font-semibold transition-all text-xs flex-shrink-0">
-            <span>💾</span> <span class="hidden lg:inline">덱 저장</span>
-          </button>
-          <button type="button" id="slideBarDeckLoadBtn" title="저장된 전체 덱 구성(3장/5장 등) 불러오기" class="p-1 sm:px-2 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 font-semibold transition-all text-xs flex-shrink-0">
-            <span>📚</span> <span class="hidden lg:inline">덱 불러오기</span>
+          <button type="button" id="deleteSlideBtn" title="현재 페이지 삭제" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-rose-400 hover:text-rose-300 border border-slate-700 hover:border-rose-800 flex items-center gap-1.5 font-medium transition-colors text-xs flex-shrink-0">
+            <span>🗑️</span> <span>삭제</span>
           </button>
         </div>
 
@@ -6435,9 +6421,9 @@
       });
     }
 
-    function loadPageState(index) {
+    function loadPageState(index, skipSave = false) {
       if (index < 0 || index >= pages.length) return;
-      saveCurrentPage();
+      if (!skipSave) saveCurrentPage();
       activePageIndex = index;
       const targetPage = pages[activePageIndex];
       for (let k of pageKeys) {
@@ -6652,25 +6638,49 @@
       const prevBtn = document.getElementById('prevSlideBtn');
       const nextBtn = document.getElementById('nextSlideBtn');
       const addSlideBtn = document.getElementById('addSlideBtn');
+      const addSlideMenuToggleBtn = document.getElementById('addSlideMenuToggleBtn');
       const addSlideMenu = document.getElementById('addSlideMenu');
       const dupBtn = document.getElementById('dupSlideBtn');
       const deleteBtn = document.getElementById('deleteSlideBtn');
-      const movePrevBtn = document.getElementById('movePrevSlideBtn');
-      const moveNextBtn = document.getElementById('moveNextSlideBtn');
       const autoRenumberBtn = document.getElementById('autoRenumberBtn');
       const downloadAllBtn = document.getElementById('downloadAllBtn');
 
       if (prevBtn) prevBtn.addEventListener('click', () => loadPageState(activePageIndex - 1));
       if (nextBtn) nextBtn.addEventListener('click', () => loadPageState(activePageIndex + 1));
 
-      if (addSlideBtn && addSlideMenu) {
+      // 1. 메인 "➕ 슬라이드 추가" 버튼 클릭 시: 새 본문 슬라이드 즉시 추가
+      if (addSlideBtn) {
         addSlideBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          addSlideMenu.classList.toggle('hidden');
+          if (addSlideMenu) addSlideMenu.classList.add('hidden');
+          addPage('body');
         });
-        document.addEventListener('click', () => {
-          addSlideMenu.classList.add('hidden');
+      }
+
+      // 2. 서브 "▼" 화살표 버튼 클릭 시: 템플릿 선택 드롭다운 토글 (Fixed 포지셔닝으로 overflow 클리핑 방지)
+      if (addSlideMenuToggleBtn && addSlideMenu) {
+        addSlideMenuToggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isHidden = addSlideMenu.classList.contains('hidden');
+          if (isHidden) {
+            const anchor = document.getElementById('addSlideGroup') || addSlideMenuToggleBtn;
+            const rect = anchor.getBoundingClientRect();
+            addSlideMenu.style.position = 'fixed';
+            addSlideMenu.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - 185))}px`;
+            addSlideMenu.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+            addSlideMenu.style.zIndex = '9999';
+            addSlideMenu.classList.remove('hidden');
+          } else {
+            addSlideMenu.classList.add('hidden');
+          }
         });
+
+        document.addEventListener('click', (e) => {
+          if (!addSlideMenu.contains(e.target)) {
+            addSlideMenu.classList.add('hidden');
+          }
+        });
+
         document.querySelectorAll('[data-add-template]').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -6682,8 +6692,6 @@
 
       if (dupBtn) dupBtn.addEventListener('click', duplicateCurrentPage);
       if (deleteBtn) deleteBtn.addEventListener('click', deleteCurrentPage);
-      if (movePrevBtn) movePrevBtn.addEventListener('click', () => moveCurrentPage(-1));
-      if (moveNextBtn) moveNextBtn.addEventListener('click', () => moveCurrentPage(1));
       if (autoRenumberBtn) autoRenumberBtn.addEventListener('click', () => autoRenumberBodyPages(true));
       if (downloadAllBtn) downloadAllBtn.addEventListener('click', downloadAllPagesZip);
 
@@ -6729,7 +6737,7 @@
           }
           if (floatingPreviewBtn) {
             floatingPreviewBtn.innerHTML = '<span class="text-sm">✏️</span><span>편집 패널</span>';
-            floatingPreviewBtn.className = 'md:hidden fixed bottom-20 right-4 sm:right-6 z-40 px-3.5 py-2 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-2xl flex items-center gap-1.5 border border-emerald-400/40 transform active:scale-95 transition-all';
+            floatingPreviewBtn.className = 'md:hidden fixed bottom-[102px] right-4 sm:right-6 z-40 px-3.5 py-2 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-2xl flex items-center gap-1.5 border border-emerald-400/40 transform active:scale-95 transition-all';
           }
           // Trigger render & fit when showing preview on mobile
           requestAnimationFrame(() => {
@@ -7564,13 +7572,13 @@
 
     function loadDeckById(deckId) {
       const allDecks = getAllDecks();
-      const target = allDecks.find(d => d.id === deckId);
+      const select = document.getElementById('deckSelect');
+      const targetId = deckId || (select ? select.value : '') || (DEFAULT_DECKS[0] ? DEFAULT_DECKS[0].id : '');
+      const target = allDecks.find(d => d.id === targetId);
       if (!target || !Array.isArray(target.pages) || target.pages.length === 0) {
         showToast('⚠️ 선택한 덱을 찾을 수 없습니다.');
         return;
       }
-
-      saveCurrentPage();
 
       // Preserve active image if available so photo is not lost
       const activeImg = state.image || (pages[0] && pages[0].image) || null;
@@ -7589,13 +7597,18 @@
             page[k] = pData[k];
           }
         }
-        if (activeImg) page.image = activeImg;
+        if (pData.image) {
+          page.image = pData.image;
+        } else if (activeImg) {
+          page.image = activeImg;
+        }
         return page;
       });
 
       activePageIndex = 0;
-      loadPageState(0);
+      loadPageState(0, true); // skipSave = true prevents stale state from overwriting deck page 1
       updateSlideBar();
+      fitCanvasToViewport();
       renderCanvas();
       updateVaultCountBadges();
 
@@ -8084,37 +8097,6 @@
             importDeckJson(file);
             importDeckInput.value = '';
           }
-        });
-      }
-
-      // 3. Slide Bar Quick Buttons integration
-      const slideBarDeckSaveBtn = document.getElementById('slideBarDeckSaveBtn');
-      const slideBarDeckLoadBtn = document.getElementById('slideBarDeckLoadBtn');
-
-      if (slideBarDeckSaveBtn) {
-        slideBarDeckSaveBtn.addEventListener('click', () => {
-          switchVaultTab('deck');
-          if (saveDeckForm) saveDeckForm.classList.remove('hidden');
-          if (newDeckNameInput) {
-            const userCount = getUserDecks().length;
-            newDeckNameInput.value = `내 ${pages.length}장 카드뉴스 구성 ${userCount + 1}`;
-            newDeckNameInput.focus();
-            newDeckNameInput.select();
-          }
-          if (toggleDeckIcon) toggleDeckIcon.textContent = '✖️';
-          if (toggleDeckText) toggleDeckText.textContent = '닫기';
-
-          // Scroll sidebar to vault section
-          const vaultSection = document.getElementById('presetVaultSection');
-          if (vaultSection) vaultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-      }
-
-      if (slideBarDeckLoadBtn) {
-        slideBarDeckLoadBtn.addEventListener('click', () => {
-          switchVaultTab('deck');
-          const vaultSection = document.getElementById('presetVaultSection');
-          if (vaultSection) vaultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       }
     }
